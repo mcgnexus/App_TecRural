@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useRef, useState } from 'react';
-import type { WeatherData } from '@/lib/weather';
+import type { WeatherData, WeatherSource } from '@/lib/weather';
 import { weatherCodeToLabel } from '@/lib/weather';
 import { computeRisks, getRecommendation } from '@/lib/recommendations';
 import type { RiskLevel } from '@/lib/weather';
@@ -23,6 +23,22 @@ const RISK_LABEL: Record<RiskLevel, string> = {
   low: 'Bajo',
   medium: 'Medio',
   high: 'Alto',
+};
+
+const SOURCE_LABEL: Record<WeatherSource, string> = {
+  aemet: 'Datos oficiales AEMET',
+  openmeteo: 'Datos Open-Meteo',
+  hybrid: 'AEMET + Open-Meteo',
+  mock: 'Datos orientativos',
+};
+
+const SOURCE_TITLE: Record<WeatherSource, string> = {
+  aemet: 'Previsión oficial de la Agencia Estatal de Meteorología (AEMET).',
+  openmeteo:
+    'Datos del modelo meteorológico Open-Meteo (AEMET no está disponible en este momento).',
+  hybrid:
+    'Condiciones actuales y previsión de hoy de AEMET (oficial); tendencia de los próximos días de Open-Meteo.',
+  mock: 'La previsión no está disponible en este momento; se muestran datos orientativos de ejemplo.',
 };
 
 function dayLabel(date: string): string {
@@ -79,7 +95,7 @@ export default function WeatherWidget() {
     setError('');
     try {
       const res = await fetch(
-        `/api/weather?lat=${encodeURIComponent(place.lat)}&lon=${encodeURIComponent(place.lon)}`,
+        `/api/weather?municipality=${encodeURIComponent(place.name)}`,
         { cache: 'no-store' }
       );
       if (!res.ok) {
@@ -123,7 +139,6 @@ export default function WeatherWidget() {
 
   const waLink = waMessage ? buildWhatsAppLink(waMessage) : null;
   const isMock = weather?.source === 'mock';
-
   return (
     <div id="consulta">
       <div className="card selector-card">
@@ -217,20 +232,19 @@ export default function WeatherWidget() {
             <h3 style={{ color: 'var(--green-dark)' }}>
               Tiempo en {municipality}
             </h3>
-            {isMock && (
-              <span
-                style={{
-                  fontSize: '0.75rem',
-                  color: 'var(--muted)',
-                  background: 'var(--cloud)',
-                  borderRadius: 999,
-                  padding: '3px 10px',
-                }}
-                title="La previsión no está disponible en este momento; se muestran datos orientativos de ejemplo."
-              >
-                Datos orientativos
-              </span>
-            )}
+            <span
+              style={{
+                fontSize: '0.75rem',
+                color: isMock ? 'var(--muted)' : 'var(--green-dark)',
+                background: isMock ? 'var(--cloud)' : 'var(--green-light)',
+                borderRadius: 999,
+                padding: '3px 10px',
+                border: isMock ? undefined : '1px solid #d5e5d5',
+              }}
+              title={SOURCE_TITLE[weather.source]}
+            >
+              {SOURCE_LABEL[weather.source]}
+            </span>
           </div>
 
           <div className="weather-grid">
@@ -243,7 +257,8 @@ export default function WeatherWidget() {
                 <div className="weather-sub">
                   Sensación{' '}
                   {Math.round(weather.current.apparentTemperature)} °C ·{' '}
-                  {weatherCodeToLabel(weather.current.weatherCode)}
+                  {weather.current.condition ??
+                    weatherCodeToLabel(weather.current.weatherCode)}
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
@@ -312,6 +327,11 @@ export default function WeatherWidget() {
                     <div className="rain">
                       {d.precipitationProbability}% · {d.precipitation.toFixed(1)} mm
                     </div>
+                    {d.condition && (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+                        {d.condition}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

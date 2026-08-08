@@ -14,7 +14,10 @@ interés real** antes de invertir más en el proyecto.
   Salobreña, Motril…).
 - Selección de cultivo (olivar, almendro, pistacho, hortícolas, aguacate,
   chirimoyo, mango, viñedo, otros).
-- Tiempo actual y previsión a 3 días desde **Open-Meteo** (sin API key).
+- Tiempo actual y previsión a 3 días con **estrategia híbrida**: **AEMET**
+  (predicción oficial por municipio) para hoy y condiciones actuales, y
+  **Open-Meteo** (sin API key) para la tendencia de los próximos días, los mm
+  de lluvia y como respaldo.
 - Indicadores de **riesgo de calor, viento y sequedad**.
 - **Recomendación orientativa de riego** adaptada al cultivo:
   - "No parece necesario regar hoy".
@@ -34,7 +37,8 @@ interés real** antes de invertir más en el proyecto.
 
 - **Next.js 14** (App Router) + **React 18** + **TypeScript**.
 - **SQLite** vía `better-sqlite3` (base de datos ligera en el propio VPS).
-- **Open-Meteo** para meteorología (no requiere API key).
+- **AEMET OpenData** (datos oficiales por municipio, API key gratuita) +
+  **Open-Meteo** como respaldo y para la previsión a varios días.
 - CSS propio limpio, sin framework de UI.
 - PWA manual (manifest + service worker + iconos generados sin dependencias).
 
@@ -212,13 +216,37 @@ pm2 restart tecrural
 
 ## API meteorológica
 
-Por defecto usa **Open-Meteo** (gratis y sin API key). Si quieres usar otra API,
-deja la capa preparada: cambia `WEATHER_API_BASE` o modifica `src/lib/weather.ts`
-(añade la API key como variable de entorno si es necesario). La capa ya incluye:
+La app usa una **estrategia híbrida**: cada fuente aporta lo que hace mejor y
+nunca se queda sin datos.
 
-- Caché en memoria de 15 minutos.
-- Datos de respaldo (*mock*) si la API no responde (la app sigue funcionando).
-- Normalización de datos para que el resto de la app no dependa de la fuente.
+| Dato | Fuente |
+| --- | --- |
+| Condiciones actuales (temp, humedad, viento) | **AEMET** (oficial) → Open-Meteo |
+| Previsión de hoy (máx/mín, probabilidad, cielo) | **AEMET** (oficial) → Open-Meteo |
+| Previsión días 2 y 3 (tendencia) | **Open-Meteo** |
+| Lluvia en mm (hoy y próximos días) | **Open-Meteo** (+ suma horaria AEMET) |
+
+Cómo funciona en la práctica:
+
+1. **Open-Meteo** se consulta siempre (fiable, sin API key): es la columna
+   vertebral de la previsión a varios días y de los mm de lluvia.
+2. **AEMET** se consulta en paralelo (si hay `AEMET_API_KEY`): aporta la
+   predicción oficial del municipio para hoy y las condiciones actuales. Como
+   AEMET tiene límites de peticiones, si no responde (p. ej. HTTP 429) la app
+   usa sin problema los datos de Open-Meteo.
+3. Si ninguna API responde, se muestran **datos orientativos** (mock) con la
+   etiqueta "Datos orientativos".
+
+La UI indica siempre la fuente: "Datos oficiales AEMET", "Open-Meteo",
+"AEMET + Open-Meteo" o "Datos orientativos".
+
+Notas:
+- La caché en memoria es de 15 minutos (configurable en `src/lib/weather.ts`).
+- AEMET requiere API key gratuita (<https://opendata.aemet.es/centrodedescargas/altaUsuario>)
+  y usa el código oficial de cada municipio (`src/lib/municipalities.ts`).
+- AEMET limita el número de peticiones (~30/min y cupo diario); la caché y el
+  respaldo evitan que se note. Para cambiar el comportamiento edita
+  `src/lib/weather.ts` y `src/lib/aemet.ts`.
 
 ## Idiomas y textos
 
