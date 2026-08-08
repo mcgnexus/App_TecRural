@@ -55,20 +55,20 @@ async function fetchAsJson(url: string, key: string, timeoutMs: number): Promise
  * Cliente AEMET en dos pasos: primero pide el endpoint (devuelve un enlace
  * temporal `datos`) y después descarga el JSON con la misma api_key.
  */
-async function fetchAemetJson(path: string, retries = 3): Promise<unknown | null> {
+async function fetchAemetJson(path: string, retries = 2): Promise<unknown | null> {
   const key = process.env.AEMET_API_KEY || '';
   if (!key) return null;
 
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      const meta = (await fetchAsJson(`${BASE}/${path}`, key, 15000)) as {
+      const meta = (await fetchAsJson(`${BASE}/${path}`, key, 8000)) as {
         datos?: string;
       };
       if (!meta?.datos) {
         throw new Error('AEMET no devolvió enlace de datos');
       }
       await delay(500);
-      return await fetchAsJson(meta.datos, key, 20000);
+      return await fetchAsJson(meta.datos, key, 12000);
     } catch (err) {
       if (attempt === retries - 1) {
         console.warn('[aemet] petición fallida:', path, err);
@@ -221,18 +221,6 @@ export async function getAemetToday(aemetCode: string): Promise<AemetToday | nul
 // Avisos de fenómenos adversos (Meteoalerta / CAP)
 // ---------------------------------------------------------------------------
 
-/** Códigos de Comunidad Autónoma usados por el endpoint de avisos. */
-const CCAA: Record<string, string> = {
-  '04': '61', // Almería
-  '11': '61', // Cádiz
-  '14': '61', // Córdoba
-  '18': '61', // Granada
-  '21': '61', // Huelva
-  '23': '61', // Jaén
-  '29': '61', // Málaga
-  '41': '61', // Sevilla
-};
-
 const AVISOS_TTL_MS = 30 * 60 * 1000;
 
 const avisosCache = new Map<
@@ -241,7 +229,7 @@ const avisosCache = new Map<
 >();
 
 /** Descarga el archivo de avisos (un tar con mensajes CAP XML). */
-async function fetchAemetBinary(url: string, retries = 3): Promise<ArrayBuffer | null> {
+async function fetchAemetBinary(url: string, retries = 2): Promise<ArrayBuffer | null> {
   const key = process.env.AEMET_API_KEY || '';
   if (!key) return null;
 
@@ -249,7 +237,7 @@ async function fetchAemetBinary(url: string, retries = 3): Promise<ArrayBuffer |
     try {
       const res = await fetch(url, {
         headers: { api_key: key },
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.timeout(12000),
       });
       if (!res.ok) {
         throw new Error(`AEMET avisos HTTP ${res.status}`);
@@ -336,14 +324,15 @@ function parseCapAviso(xml: string): AemetAviso | null {
 }
 
 /**
- * Obtiene los avisos oficiales de fenómenos adversos de AEMET para una
- * provincia (código INE, p. ej. "18" para Granada). Devuelve [] si no hay
- * avisos activos o la API no está disponible.
+ * Obtiene los avisos oficiales de fenómenos adversos de AEMET que afectan a
+ * una zona concreta del Plan Meteoalerta (código de 6 dígitos, CCAA+provincia
+ * +zona, p. ej. "611802" para Guadix y Baza). Devuelve [] si no hay avisos
+ * activos o la API no está disponible.
  */
-export async function getAemetAvisos(provinceCode: string): Promise<AemetAviso[]> {
-  const ccaa = CCAA[provinceCode];
-  if (!ccaa) return [];
-  const key = `${ccaa}:${provinceCode}`;
+export async function getAemetAvisos(zoneCode: string): Promise<AemetAviso[]> {
+  if (!/^\d{6}$/.test(zoneCode)) return [];
+  const ccaa = zoneCode.slice(0, 2);
+  const key = `zona:${zoneCode}`;
 
   const hit = avisosCache.get(key);
   if (hit && hit.expiresAt > Date.now()) {
@@ -355,14 +344,14 @@ export async function getAemetAvisos(provinceCode: string): Promise<AemetAviso[]
     const meta = (await fetchAsJson(
       `${BASE}/avisos_cap/ultimoelaborado/area/${ccaa}`,
       process.env.AEMET_API_KEY || '',
-      20000
+      12000
     )) as { datos?: string };
     const buffer = meta?.datos ? await fetchAemetBinary(meta.datos) : null;
     if (buffer) {
-      const prefix = `${ccaa}${provinceCode}`; // p. ej. "6118" (Andalucía, Granada)
       for (const file of readTar(buffer)) {
         const m = file.name.match(/AFAZ(\d{6})/);
-        if (!m || !m[1].startsWith(prefix)) continue;
+        // Solo los avisos de la zona Meteoalerta que cubre el municipio.
+        if (!m || m[1] !== zoneCode) continue;
         const aviso = parseCapAviso(new TextDecoder('utf-8').decode(file.data));
         if (aviso) result.push(aviso);
       }

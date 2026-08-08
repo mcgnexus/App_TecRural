@@ -7,9 +7,10 @@ export interface WeatherLocation {
   lat: number;
   lon: number;
   aemet?: string;
-  /** Código INE de provincia (p. ej. "18" para Granada): habilita los avisos
-   *  oficiales de AEMET para la zona. */
-  province?: string;
+  /** Código de zona del Plan Meteoalerta de AEMET (p. ej. "611802" para
+   *  Guadix y Baza): habilita los avisos oficiales que afectan realmente al
+   *  municipio. */
+  avisoZona?: string;
 }
 
 export type RiskLevel = 'low' | 'medium' | 'high';
@@ -336,13 +337,16 @@ async function fetchWeather(location: WeatherLocation): Promise<WeatherData> {
   const aemetKey = process.env.AEMET_API_KEY;
 
   // Open-Meteo y AEMET se piden en paralelo para no sumar latencia.
+  // AEMET (predicción y avisos) solo mejora los datos oficiales y es más
+  // lento, así que se le da un margen corto: si no llega a tiempo, la
+  // consulta responde con Open-Meteo sin hacer esperar al usuario.
   const [om, aemet, avisosRaw] = await Promise.all([
     fetchOpenMeteo(location.lat, location.lon).catch(() => null),
     aemetKey && location.aemet
-      ? withTimeout(getAemetToday(location.aemet), 9000).catch(() => null)
+      ? withTimeout(getAemetToday(location.aemet), 5000).catch(() => null)
       : Promise.resolve(null),
-    aemetKey && location.province
-      ? withTimeout(getAemetAvisos(location.province), 12000).catch(() => undefined)
+    aemetKey && location.avisoZona
+      ? withTimeout(getAemetAvisos(location.avisoZona), 3000).catch(() => undefined)
       : Promise.resolve(undefined),
   ]);
   const avisos = avisosRaw ?? undefined;

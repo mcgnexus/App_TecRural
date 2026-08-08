@@ -170,11 +170,14 @@ export default function WeatherWidget() {
     }
     setStatus('loading');
     setError('');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 20000);
     try {
       const res = await fetch(
         `/api/weather?municipality=${encodeURIComponent(place.name)}`,
-        { cache: 'no-store' }
+        { cache: 'no-store', signal: controller.signal }
       );
+      clearTimeout(timer);
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
@@ -185,6 +188,7 @@ export default function WeatherWidget() {
         resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 80);
     } catch {
+      clearTimeout(timer);
       setStatus('error');
       setError(
         'No se ha podido obtener el tiempo ahora mismo. Prueba de nuevo en unos minutos.'

@@ -110,7 +110,7 @@ export async function runAlertChecks(
         lat: place.lat,
         lon: place.lon,
         aemet: place.aemet,
-        province: place.province,
+        avisoZona: place.avisoZona,
       });
       const alarms = computeAlarms(weather, { crop }).filter(
         (a) => a.level !== 'info'
