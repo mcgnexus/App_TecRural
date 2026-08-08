@@ -52,6 +52,16 @@ function ensureNeonSchema(): Promise<void> {
           problem TEXT,
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         );
+        CREATE TABLE IF NOT EXISTS alert_logs (
+          id SERIAL PRIMARY KEY,
+          phone TEXT NOT NULL,
+          kind TEXT NOT NULL,
+          day TEXT NOT NULL,
+          message TEXT NOT NULL,
+          sent_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+        CREATE INDEX IF NOT EXISTS idx_alert_logs_phone_day
+          ON alert_logs (phone, day);
       `)
       .then(() => undefined)
       .catch((err) => {
@@ -127,6 +137,32 @@ async function deleteLeadNeon(id: number): Promise<boolean> {
   return (rowCount ?? 0) > 0;
 }
 
+async function alreadyAlertedNeon(
+  phone: string,
+  kind: string,
+  day: string
+): Promise<boolean> {
+  await ensureNeonSchema();
+  const { rows } = await neon().query(
+    'SELECT 1 FROM alert_logs WHERE phone = $1 AND kind = $2 AND day = $3 LIMIT 1',
+    [phone, kind, day]
+  );
+  return rows.length > 0;
+}
+
+async function markAlertedNeon(
+  phone: string,
+  kind: string,
+  day: string,
+  message: string
+): Promise<void> {
+  await ensureNeonSchema();
+  await neon().query(
+    'INSERT INTO alert_logs (phone, kind, day, message) VALUES ($1, $2, $3, $4)',
+    [phone, kind, day, message]
+  );
+}
+
 // ---------------------------------------------------------------------------
 // SQLite (respaldo local sin DATABASE_URL)
 // ---------------------------------------------------------------------------
@@ -152,6 +188,15 @@ function sqlite(): Database.Database {
         problem TEXT,
         created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
       );
+      CREATE TABLE IF NOT EXISTS alert_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        phone TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        day TEXT NOT NULL,
+        message TEXT NOT NULL,
+        sent_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_alert_logs_phone_day ON alert_logs (phone, day);
     `);
     sqliteDb = db;
   }
@@ -191,6 +236,28 @@ function deleteLeadSqlite(id: number): boolean {
   return sqlite().prepare('DELETE FROM leads WHERE id = ?').run(id).changes > 0;
 }
 
+function alreadyAlertedSqlite(phone: string, kind: string, day: string): boolean {
+  const row = sqlite()
+    .prepare(
+      'SELECT 1 FROM alert_logs WHERE phone = ? AND kind = ? AND day = ? LIMIT 1'
+    )
+    .get(phone, kind, day);
+  return Boolean(row);
+}
+
+function markAlertedSqlite(
+  phone: string,
+  kind: string,
+  day: string,
+  message: string
+): void {
+  sqlite()
+    .prepare(
+      'INSERT INTO alert_logs (phone, kind, day, message) VALUES (?, ?, ?, ?)'
+    )
+    .run(phone, kind, day, message);
+}
+
 // ---------------------------------------------------------------------------
 // API pública
 // ---------------------------------------------------------------------------
@@ -214,4 +281,23 @@ export function countLeads(): Promise<number> {
 
 export function deleteLead(id: number): Promise<boolean> {
   return USE_NEON ? deleteLeadNeon(id) : Promise.resolve(deleteLeadSqlite(id));
+}
+
+/** ¿Ya se avisó de este tipo de alarma a este teléfono hoy? (evita duplicados). */
+export function alreadyAlerted(phone: string, kind: string, day: string): Promise<boolean> {
+  return USE_NEON
+    ? alreadyAlertedNeon(phone, kind, day)
+    : Promise.resolve(alreadyAlertedSqlite(phone, kind, day));
+}
+
+/** Registra una alarma notificada para no volver a enviarla el mismo día. */
+export function markAlerted(
+  phone: string,
+  kind: string,
+  day: string,
+  message: string
+): Promise<void> {
+  return USE_NEON
+    ? markAlertedNeon(phone, kind, day, message)
+    : Promise.resolve(markAlertedSqlite(phone, kind, day, message));
 }

@@ -80,6 +80,35 @@ export function ClockIcon(props: P) {
   );
 }
 
+export function LightningIcon(props: P) {
+  return (
+    <svg {...base(props)}>
+      <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" />
+    </svg>
+  );
+}
+
+export function AlertShieldIcon(props: P) {
+  return (
+    <svg {...base(props)}>
+      <path d="M12 2 4 5.5V11c0 5.5 3.5 9.5 8 11 4.5-1.5 8-5.5 8-11V5.5L12 2z" />
+      <path d="M12 7v5" />
+      <circle cx="12" cy="16" r="0.6" />
+    </svg>
+  );
+}
+
+export function HailIcon(props: P) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="12" cy="6" r="3" />
+      <circle cx="5" cy="14" r="2.5" />
+      <circle cx="12" cy="18" r="2.5" />
+      <circle cx="19" cy="14" r="2.5" />
+    </svg>
+  );
+}
+
 export function LeafIcon(props: P) {
   return (
     <svg {...base(props)}>

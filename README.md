@@ -22,6 +22,10 @@ interés real** antes de invertir más en el proyecto.
   (ET0 FAO-56 de Open-Meteo × coeficiente de cultivo Kc por etapa fenológica)
   menos la lluvia prevista, y **mejores horas** para regar según el clima
   horario (calor, viento y lluvia).
+- **Alarmas meteorológicas**: avisos de calor extremo, helada, frío, tormentas,
+  viento fuerte, lluvia intensa y sequía, con sensibilidad por cultivo
+  (tropicales como aguacate o chirimoyo avisan antes). Niveles de alerta,
+  consejo práctico y banner destacado cuando hay riesgo alto.
 - Indicadores de **riesgo de calor, viento y sequedad**.
 - **Recomendación orientativa de riego** adaptada al cultivo:
   - "No parece necesario regar hoy".
@@ -73,6 +77,9 @@ tecrural/
 │   ├── lib/
 │   │   ├── db.ts              # Neon (PostgreSQL) o SQLite (respaldo local)
 │   │   ├── weather.ts         # Open-Meteo + mock de respaldo
+│   │   ├── aemet.ts           # AEMET (hoy y condiciones actuales)
+│   │   ├── irrigation.ts      # cálculo de riego y mejores horas
+│   │   ├── alarms.ts          # detección de alarmas meteorológicas
 │   │   ├── recommendations.ts # riesgos y recomendación de riego
 │   │   ├── municipalities.ts  # zonas y municipios con coordenadas
 │   │   ├── crops.ts           # cultivos, tamaños y problemas

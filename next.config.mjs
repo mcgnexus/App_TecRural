@@ -2,6 +2,10 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  experimental: {
+    instrumentationHook: true,
+    serverComponentsExternalPackages: ['better-sqlite3'],
+  },
   async headers() {
     return [
       {

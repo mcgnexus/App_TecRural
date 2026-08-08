@@ -1019,6 +1019,168 @@ textarea {
   flex: 1;
 }
 
+/* ---------- Alarmas ---------- */
+.alarm-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--red);
+  color: #fff;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+.alarm-banner svg {
+  flex-shrink: 0;
+}
+
+.alarms {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+.alarm {
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.88rem;
+  border: 1px solid transparent;
+  background: var(--paper);
+}
+.alarm.alert {
+  border-color: var(--red);
+  background: var(--red-bg);
+}
+.alarm.warning {
+  border-color: var(--amber);
+  background: var(--amber-bg);
+}
+.alarm.info {
+  border-color: var(--green-light);
+  background: #f2f9f2;
+}
+.alarm-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.alarm-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.alarm-title {
+  font-weight: 600;
+}
+.alarm-at {
+  margin-left: auto;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+.alarm-level {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.alarm.alert .alarm-level {
+  background: var(--red);
+}
+.alarm.warning .alarm-level {
+  background: var(--amber);
+}
+.alarm.info .alarm-level {
+  background: var(--green);
+}
+.alarm-message {
+  margin: 6px 0 4px;
+}
+.alarm-advice {
+  border-left: 3px solid currentColor;
+  padding-left: 10px;
+  opacity: 0.85;
+}
+.alarm.alert .alarm-advice {
+  border-color: var(--red);
+}
+.alarm.warning .alarm-advice {
+  border-color: var(--amber);
+}
+.alarm.info .alarm-advice {
+  border-color: var(--green);
+}
+
+/* ---------- Avisos oficiales AEMET ---------- */
+.avisos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+.aviso {
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.88rem;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--sky);
+  background: var(--paper);
+}
+.aviso.amarillo {
+  border-left-color: #e6b800;
+}
+.aviso.naranja {
+  border-left-color: #ef7d00;
+}
+.aviso.rojo {
+  border-left-color: #d02828;
+}
+.aviso-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.aviso-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.aviso.amarillo .aviso-badge {
+  background: #e6b800;
+}
+.aviso.naranja .aviso-badge {
+  background: #ef7d00;
+}
+.aviso.rojo .aviso-badge {
+  background: #d02828;
+}
+.aviso-title {
+  font-weight: 600;
+}
+.aviso-zona {
+  margin-top: 4px;
+  color: var(--muted);
+}
+.aviso-range {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.aviso-desc {
+  margin-top: 4px;
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 640px) {
   .nav-link {

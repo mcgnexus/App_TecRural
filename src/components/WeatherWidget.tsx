@@ -8,6 +8,7 @@ import type { RiskLevel } from '@/lib/weather';
 import { ZONES, municipalitiesByZone, findMunicipality } from '@/lib/municipalities';
 import { CROPS, CROP_STAGES, findCrop, type CropStageValue } from '@/lib/crops';
 import { computeIrrigation, formatLitros } from '@/lib/irrigation';
+import { computeAlarms, type AlarmKind } from '@/lib/alarms';
 import { buildWhatsAppLink, businessName } from '@/lib/wa';
 import {
   SunIcon,
@@ -16,6 +17,9 @@ import {
   RainIcon,
   ThermometerIcon,
   ClockIcon,
+  LightningIcon,
+  AlertShieldIcon,
+  HailIcon,
   WhatsAppIcon,
 } from './icons';
 
@@ -55,6 +59,40 @@ function dayLabel(date: string): string {
   tomorrow.setDate(tomorrow.getDate() + 1);
   if (sameDay(d, tomorrow)) return 'Mañana';
   return d.toLocaleDateString('es-ES', { weekday: 'short' });
+}
+
+function alarmIcon(kind: AlarmKind) {
+  switch (kind) {
+    case 'calor':
+    case 'helada':
+    case 'frio':
+      return <ThermometerIcon width={16} height={16} />;
+    case 'tormenta':
+      return <LightningIcon width={16} height={16} />;
+    case 'granizo':
+      return <HailIcon width={16} height={16} />;
+    case 'viento':
+      return <WindIcon width={16} height={16} />;
+    case 'lluvia':
+      return <RainIcon width={16} height={16} />;
+    case 'sequia':
+      return <DropletIcon width={16} height={16} />;
+    case 'aviso':
+      return <AlertShieldIcon width={16} height={16} />;
+  }
+}
+
+const AVISO_LABEL = { amarillo: 'Amarillo', naranja: 'Naranja', rojo: 'Rojo' } as const;
+
+function avisoRange(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 export default function WeatherWidget() {
@@ -123,6 +161,18 @@ export default function WeatherWidget() {
     () => (weather ? computeRisks(weather) : null),
     [weather]
   );
+  const alarms = useMemo(
+    () => (weather ? computeAlarms(weather, { crop }) : []),
+    [weather, crop]
+  );
+  const activeAlerts = useMemo(
+    () => alarms.filter((a) => a.level === 'alert'),
+    [alarms]
+  );
+  const alertTitles = useMemo(
+    () => alarms.filter((a) => a.level !== 'info').map((a) => a.title),
+    [alarms]
+  );
   const reco = useMemo(
     () => (weather ? getRecommendation(weather, crop) : null),
     [weather, crop]
@@ -156,6 +206,7 @@ export default function WeatherWidget() {
       ``,
       `- Zona: ${place?.name ?? municipality}`,
       `- Cultivo: ${cropLabel}${irri ? ` (${irri.stageLabel})` : ''}`,
+      `- Alertas: ${alertTitles.length ? alertTitles.join(', ') : 'sin alertas destacadas'}`,
       `- Recomendación: ${reco.title}`,
       ...(irri
         ? [
@@ -164,7 +215,7 @@ export default function WeatherWidget() {
           ]
         : []),
     ].join('\n');
-  }, [weather, reco, municipality, crop, irri, hoursText]);
+  }, [weather, reco, municipality, crop, irri, hoursText, alertTitles]);
 
   const waLink = waMessage ? buildWhatsAppLink(waMessage) : null;
   const isMock = weather?.source === 'mock';
@@ -408,6 +459,16 @@ export default function WeatherWidget() {
             </div>
           </div>
 
+          {activeAlerts.length > 0 && (
+            <div className="alarm-banner" role="alert">
+              <LightningIcon width={20} height={20} />
+              <div>
+                <strong>Alerta hoy:</strong>{' '}
+                {activeAlerts.map((a) => a.title).join(' · ')}
+              </div>
+            </div>
+          )}
+
           <h3 style={{ color: 'var(--green-dark)', marginTop: 22 }}>
             Riesgos para el cultivo
           </h3>
@@ -424,6 +485,69 @@ export default function WeatherWidget() {
               );
             })}
           </div>
+
+          {weather.avisos && weather.avisos.length > 0 && (
+            <>
+              <h3 style={{ color: 'var(--green-dark)', marginTop: 22 }}>
+                Avisos oficiales de AEMET
+              </h3>
+              <div className="avisos">
+                {weather.avisos.map((a, i) => (
+                  <div className={`aviso ${a.nivel}`} key={`aviso-${i}`}>
+                    <div className="aviso-head">
+                      <span className="aviso-badge">{AVISO_LABEL[a.nivel]}</span>
+                      <span className="aviso-title">
+                        {a.fenomeno}
+                        {a.valor ? ` · ${a.valor}` : ''}
+                      </span>
+                    </div>
+                    <div className="aviso-zona">{a.zona}</div>
+                    {(a.inicio || a.fin) && (
+                      <div className="aviso-range">
+                        {a.inicio && `Desde ${avisoRange(a.inicio)}`}
+                        {a.inicio && a.fin && ' · '}
+                        {a.fin && `hasta ${avisoRange(a.fin)}`}
+                      </div>
+                    )}
+                    {a.descripcion && (
+                      <div className="aviso-desc">{a.descripcion}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          <h3 style={{ color: 'var(--green-dark)', marginTop: 22 }}>
+            Alertas meteorológicas
+          </h3>
+
+          {alarms.length === 0 ? (
+            <p className="hint" style={{ marginTop: 8 }}>
+              Sin alertas destacadas hoy en tu zona.
+            </p>
+          ) : (
+            <div className="alarms">
+              {alarms.map((a, idx) => (
+                <div className={`alarm ${a.level}`} key={`${a.kind}-${idx}`}>
+                  <div className="alarm-head">
+                    <span className="alarm-icon">{alarmIcon(a.kind)}</span>
+                    <span className="alarm-title">{a.title}</span>
+                    {a.at && <span className="alarm-at">{a.at}</span>}
+                    <span className="alarm-level">
+                      {a.level === 'alert'
+                        ? 'Alerta'
+                        : a.level === 'warning'
+                          ? 'Atención'
+                          : 'Aviso'}
+                    </span>
+                  </div>
+                  <p className="alarm-message">{a.message}</p>
+                  <div className="alarm-advice">{a.advice}</div>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className={`reco ${reco.level}`}>
             <div className="reco-title">{reco.title}</div>

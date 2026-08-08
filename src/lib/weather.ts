@@ -1,4 +1,5 @@
-import { getAemetToday } from './aemet';
+import { getAemetToday, getAemetAvisos } from './aemet';
+import type { AemetAviso } from './aemet';
 
 /** Localización mínima necesaria para consultar el tiempo. */
 export interface WeatherLocation {
@@ -6,6 +7,9 @@ export interface WeatherLocation {
   lat: number;
   lon: number;
   aemet?: string;
+  /** Código INE de provincia (p. ej. "18" para Granada): habilita los avisos
+   *  oficiales de AEMET para la zona. */
+  province?: string;
 }
 
 export type RiskLevel = 'low' | 'medium' | 'high';
@@ -42,8 +46,13 @@ export interface HourlyForecast {
   temperature: number;
   humidity: number;
   windSpeed: number;
+  windGusts: number;
   precipitation: number;
   precipitationProbability: number;
+  /** Tipo de precipitación de Open-Meteo: 0 ninguno, 1 lluvia, 2 nieve,
+   *  5 granizo. */
+  precipitationType: number;
+  weatherCode: number;
   isDay: boolean;
 }
 
@@ -53,6 +62,9 @@ export interface WeatherData {
   daily: DailyForecast[];
   /** Condiciones hora a hora (para elegir las mejores horas de riego). */
   hourly?: HourlyForecast[];
+  /** Avisos oficiales de fenómenos adversos de AEMET (Meteoalerta) para la
+   *  provincia. */
+  avisos?: AemetAviso[];
   updatedAt: string;
 }
 
@@ -110,8 +122,11 @@ interface OpenMeteoHourly {
   temperature_2m?: number[];
   relative_humidity_2m?: number[];
   wind_speed_10m?: number[];
+  wind_gusts_10m?: number[];
   precipitation?: number[];
   precipitation_probability?: number[];
+  precipitation_type?: number[];
+  weather_code?: number[];
   is_day?: number[];
 }
 
@@ -147,8 +162,11 @@ function normalizeOpenMeteo(raw: OpenMeteoResponse): OpenMeteoData {
     temperature: h.temperature_2m?.[i] ?? 0,
     humidity: h.relative_humidity_2m?.[i] ?? 0,
     windSpeed: h.wind_speed_10m?.[i] ?? 0,
+    windGusts: h.wind_gusts_10m?.[i] ?? 0,
     precipitation: h.precipitation?.[i] ?? 0,
     precipitationProbability: h.precipitation_probability?.[i] ?? 0,
+    precipitationType: h.precipitation_type?.[i] ?? 0,
+    weatherCode: h.weather_code?.[i] ?? 0,
     isDay: (h.is_day?.[i] ?? 1) === 1,
   }));
 
@@ -177,7 +195,7 @@ async function fetchOpenMeteo(lat: number, lon: number): Promise<OpenMeteoData> 
     daily:
       'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,et0_fao_evapotranspiration',
     hourly:
-      'temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation,precipitation_probability,is_day',
+      'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_gusts_10m,precipitation,precipitation_probability,precipitation_type,weather_code,is_day',
     timezone: 'auto',
     forecast_days: '3',
   });
@@ -238,13 +256,17 @@ function buildMock(lat: number): WeatherData {
   const hourly: HourlyForecast[] = Array.from({ length: 24 }, (_, h) => {
     // Curva de temperatura: mínima hacia las 5:00, máxima hacia las 15:00.
     const temp = tmeanSinusoidal(tmin, tmax, h);
+    const windy = h >= 11 && h <= 18;
     return {
       time: `${today.date}T${String(h).padStart(2, '0')}:00`,
       temperature: temp,
       humidity: clamp(100 - (temp - tmin) * 3, 30, 90),
-      windSpeed: h >= 11 && h <= 18 ? 16 : 9,
+      windSpeed: windy ? 16 : 9,
+      windGusts: windy ? 30 : 14,
       precipitation: 0,
       precipitationProbability: h >= 14 && h <= 18 ? 15 : 5,
+      precipitationType: 0,
+      weatherCode: h >= 14 && h <= 18 ? 3 : 2,
       isDay: h >= 7 && h <= 20,
     };
   });
@@ -303,8 +325,9 @@ export async function getWeather(location: WeatherLocation): Promise<WeatherData
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  const guarded = promise.catch(() => null);
   return Promise.race([
-    promise,
+    guarded,
     new Promise<T | null>((resolve) => setTimeout(() => resolve(null), ms)),
   ]);
 }
@@ -313,12 +336,16 @@ async function fetchWeather(location: WeatherLocation): Promise<WeatherData> {
   const aemetKey = process.env.AEMET_API_KEY;
 
   // Open-Meteo y AEMET se piden en paralelo para no sumar latencia.
-  const [om, aemet] = await Promise.all([
+  const [om, aemet, avisosRaw] = await Promise.all([
     fetchOpenMeteo(location.lat, location.lon).catch(() => null),
     aemetKey && location.aemet
-      ? withTimeout(getAemetToday(location.aemet), 9000)
+      ? withTimeout(getAemetToday(location.aemet), 9000).catch(() => null)
       : Promise.resolve(null),
+    aemetKey && location.province
+      ? withTimeout(getAemetAvisos(location.province), 12000).catch(() => undefined)
+      : Promise.resolve(undefined),
   ]);
+  const avisos = avisosRaw ?? undefined;
 
   // Ninguna API respondió
   if (!om && !aemet) {
@@ -332,6 +359,7 @@ async function fetchWeather(location: WeatherLocation): Promise<WeatherData> {
       source: 'aemet',
       current: aemet.current,
       daily: [aemet.today],
+      avisos,
       updatedAt: aemet.elaboratedAt,
     };
   }
@@ -343,6 +371,7 @@ async function fetchWeather(location: WeatherLocation): Promise<WeatherData> {
       current: om!.current,
       daily: om!.daily,
       hourly: om!.hourly,
+      avisos,
       updatedAt: new Date().toISOString(),
     };
   }
@@ -352,6 +381,8 @@ async function fetchWeather(location: WeatherLocation): Promise<WeatherData> {
   // horaria).
   const today: DailyForecast = {
     ...aemet.today,
+    tempMax: aemet.today.tempMax || om.daily[0]?.tempMax || aemet.today.tempMax,
+    tempMin: aemet.today.tempMin || om.daily[0]?.tempMin || aemet.today.tempMin,
     precipitation: aemet.hasHourly
       ? aemet.today.precipitation
       : om.daily[0]?.precipitation ?? aemet.today.precipitation,
@@ -365,6 +396,7 @@ async function fetchWeather(location: WeatherLocation): Promise<WeatherData> {
     current: aemet.hasHourly ? aemet.current : om.current,
     daily: [today, ...om.daily.slice(1)],
     hourly: om.hourly,
+    avisos,
     updatedAt: aemet.elaboratedAt,
   };
 }

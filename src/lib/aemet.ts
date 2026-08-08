@@ -10,6 +10,24 @@ export interface AemetToday {
   hasHourly: boolean;
 }
 
+export type AvisoNivel = 'amarillo' | 'naranja' | 'rojo';
+
+/** Aviso de fenómeno meteorológico adverso (Plan Meteoalerta de AEMET). */
+export interface AemetAviso {
+  nivel: AvisoNivel;
+  /** Fenómeno legible, p. ej. "Temperaturas máximas" o "Tormentas". */
+  fenomeno: string;
+  /** Valor del parámetro si lo hay, p. ej. "38 ºC" o "20 mm en 1 hora". */
+  valor: string;
+  /** Zona del Plan Meteoalerta, p. ej. "Cuenca del Genil". */
+  zona: string;
+  /** Inicio del aviso en hora oficial local (ISO). */
+  inicio: string;
+  /** Fin del aviso en hora oficial local (ISO). */
+  fin: string;
+  descripcion: string;
+}
+
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -197,4 +215,163 @@ export async function getAemetToday(aemetCode: string): Promise<AemetToday | nul
   };
 
   return { current, today, elaboratedAt, hasHourly: Boolean(hourly && diaH) };
+}
+
+// ---------------------------------------------------------------------------
+// Avisos de fenómenos adversos (Meteoalerta / CAP)
+// ---------------------------------------------------------------------------
+
+/** Códigos de Comunidad Autónoma usados por el endpoint de avisos. */
+const CCAA: Record<string, string> = {
+  '04': '61', // Almería
+  '11': '61', // Cádiz
+  '14': '61', // Córdoba
+  '18': '61', // Granada
+  '21': '61', // Huelva
+  '23': '61', // Jaén
+  '29': '61', // Málaga
+  '41': '61', // Sevilla
+};
+
+const AVISOS_TTL_MS = 30 * 60 * 1000;
+
+const avisosCache = new Map<
+  string,
+  { data: AemetAviso[]; expiresAt: number }
+>();
+
+/** Descarga el archivo de avisos (un tar con mensajes CAP XML). */
+async function fetchAemetBinary(url: string, retries = 3): Promise<ArrayBuffer | null> {
+  const key = process.env.AEMET_API_KEY || '';
+  if (!key) return null;
+
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: { api_key: key },
+        signal: AbortSignal.timeout(25000),
+      });
+      if (!res.ok) {
+        throw new Error(`AEMET avisos HTTP ${res.status}`);
+      }
+      return await res.arrayBuffer();
+    } catch (err) {
+      if (attempt === retries - 1) {
+        console.warn('[aemet] avisos: petición fallida:', url, err);
+        return null;
+      }
+      await delay(1500 * (attempt + 1));
+    }
+  }
+  return null;
+}
+
+interface TarFile {
+  name: string;
+  data: Uint8Array;
+}
+
+/** Lee un archivo tar sin comprimir (el formato que sirve AEMET). */
+function readTar(buffer: ArrayBuffer): TarFile[] {
+  const bytes = new Uint8Array(buffer);
+  const files: TarFile[] = [];
+  let offset = 0;
+
+  while (offset + 512 <= bytes.length) {
+    const header = bytes.subarray(offset, offset + 512);
+    let name = '';
+    for (const c of header.subarray(0, 100)) {
+      if (c === 0) break;
+      name += String.fromCharCode(c);
+    }
+    if (!name) break;
+
+    const sizeStr = new TextDecoder('ascii')
+      .decode(header.subarray(124, 136))
+      .split('\0')[0]
+      .trim();
+    const size = parseInt(sizeStr || '0', 8);
+    if (!Number.isFinite(size) || size < 0) break;
+
+    files.push({ name, data: bytes.subarray(offset + 512, offset + 512 + size) });
+    offset += 512 + Math.ceil(size / 512) * 512;
+  }
+  return files;
+}
+
+function xmlTag(xml: string, tag: string): string {
+  const m = xml.match(new RegExp(`<${tag}>(.*?)</${tag}>`, 's'));
+  return m ? m[1].trim() : '';
+}
+
+function xmlValueAfter(xml: string, valueName: string): string {
+  const m = xml.match(
+    new RegExp(`<valueName>${valueName}</valueName>\\s*<value>(.*?)</value>`, 's')
+  );
+  return m ? m[1].trim() : '';
+}
+
+function parseCapAviso(xml: string): AemetAviso | null {
+  const severity = xmlTag(xml, 'severity');
+  if (severity !== 'Moderate' && severity !== 'Severe' && severity !== 'Extreme') {
+    return null; // "Minor" = sin aviso
+  }
+
+  const nivel: AvisoNivel =
+    severity === 'Extreme' ? 'rojo' : severity === 'Severe' ? 'naranja' : 'amarillo';
+  const parametro = xmlValueAfter(xml, 'AEMET-Meteoalerta parametro');
+  const [_, fenomenoRaw, valorRaw] = parametro.split(';');
+  const fenomeno = fenomenoRaw?.trim() || xmlTag(xml, 'event').replace(/^Aviso de /i, '');
+  const descripcion = xmlTag(xml, 'description') || xmlTag(xml, 'headline');
+
+  return {
+    nivel,
+    fenomeno: fenomeno.charAt(0).toUpperCase() + fenomeno.slice(1),
+    valor: valorRaw?.trim() ?? '',
+    zona: xmlTag(xml, 'areaDesc'),
+    inicio: xmlTag(xml, 'onset'),
+    fin: xmlTag(xml, 'expires'),
+    descripcion: descripcion.trim(),
+  };
+}
+
+/**
+ * Obtiene los avisos oficiales de fenómenos adversos de AEMET para una
+ * provincia (código INE, p. ej. "18" para Granada). Devuelve [] si no hay
+ * avisos activos o la API no está disponible.
+ */
+export async function getAemetAvisos(provinceCode: string): Promise<AemetAviso[]> {
+  const ccaa = CCAA[provinceCode];
+  if (!ccaa) return [];
+  const key = `${ccaa}:${provinceCode}`;
+
+  const hit = avisosCache.get(key);
+  if (hit && hit.expiresAt > Date.now()) {
+    return hit.data;
+  }
+
+  const result: AemetAviso[] = [];
+  try {
+    const meta = (await fetchAsJson(
+      `${BASE}/avisos_cap/ultimoelaborado/area/${ccaa}`,
+      process.env.AEMET_API_KEY || '',
+      20000
+    )) as { datos?: string };
+    const buffer = meta?.datos ? await fetchAemetBinary(meta.datos) : null;
+    if (buffer) {
+      const prefix = `${ccaa}${provinceCode}`; // p. ej. "6118" (Andalucía, Granada)
+      for (const file of readTar(buffer)) {
+        const m = file.name.match(/AFAZ(\d{6})/);
+        if (!m || !m[1].startsWith(prefix)) continue;
+        const aviso = parseCapAviso(new TextDecoder('utf-8').decode(file.data));
+        if (aviso) result.push(aviso);
+      }
+      result.sort((a, b) => a.inicio.localeCompare(b.inicio));
+    }
+  } catch (err) {
+    console.warn('[aemet] avisos no disponibles:', err);
+  }
+
+  avisosCache.set(key, { data: result, expiresAt: Date.now() + AVISOS_TTL_MS });
+  return result;
 }

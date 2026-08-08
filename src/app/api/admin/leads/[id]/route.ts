@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { isAuthenticated } from '../../session/route';
+import { isAuthenticated } from '@/lib/admin-auth';
 import { deleteLead } from '@/lib/db';
 
 export async function DELETE(
