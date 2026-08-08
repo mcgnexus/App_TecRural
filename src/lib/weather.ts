@@ -33,12 +33,26 @@ export interface DailyForecast {
   precipitationProbability: number;
   weatherCode: number;
   condition?: string;
+  /** Evapotranspiración de referencia (ET0, FAO-56) en mm/día. */
+  et0?: number;
+}
+
+export interface HourlyForecast {
+  time: string;
+  temperature: number;
+  humidity: number;
+  windSpeed: number;
+  precipitation: number;
+  precipitationProbability: number;
+  isDay: boolean;
 }
 
 export interface WeatherData {
   source: WeatherSource;
   current: CurrentWeather;
   daily: DailyForecast[];
+  /** Condiciones hora a hora (para elegir las mejores horas de riego). */
+  hourly?: HourlyForecast[];
   updatedAt: string;
 }
 
@@ -88,21 +102,35 @@ interface OpenMeteoDaily {
   precipitation_sum?: number[];
   precipitation_probability_max?: number[];
   weather_code?: number[];
+  et0_fao_evapotranspiration?: number[];
+}
+
+interface OpenMeteoHourly {
+  time?: string[];
+  temperature_2m?: number[];
+  relative_humidity_2m?: number[];
+  wind_speed_10m?: number[];
+  precipitation?: number[];
+  precipitation_probability?: number[];
+  is_day?: number[];
 }
 
 interface OpenMeteoResponse {
   current?: OpenMeteoCurrent;
   daily?: OpenMeteoDaily;
+  hourly?: OpenMeteoHourly;
 }
 
 interface OpenMeteoData {
   current: CurrentWeather;
   daily: DailyForecast[];
+  hourly: HourlyForecast[];
 }
 
 function normalizeOpenMeteo(raw: OpenMeteoResponse): OpenMeteoData {
   const c = raw.current ?? {};
   const d = raw.daily ?? {};
+  const h = raw.hourly ?? {};
 
   const daily: DailyForecast[] = (d.time ?? []).map((date, i) => ({
     date,
@@ -111,6 +139,17 @@ function normalizeOpenMeteo(raw: OpenMeteoResponse): OpenMeteoData {
     precipitation: d.precipitation_sum?.[i] ?? 0,
     precipitationProbability: d.precipitation_probability_max?.[i] ?? 0,
     weatherCode: d.weather_code?.[i] ?? 0,
+    et0: d.et0_fao_evapotranspiration?.[i],
+  }));
+
+  const hourly: HourlyForecast[] = (h.time ?? []).map((time, i) => ({
+    time,
+    temperature: h.temperature_2m?.[i] ?? 0,
+    humidity: h.relative_humidity_2m?.[i] ?? 0,
+    windSpeed: h.wind_speed_10m?.[i] ?? 0,
+    precipitation: h.precipitation?.[i] ?? 0,
+    precipitationProbability: h.precipitation_probability?.[i] ?? 0,
+    isDay: (h.is_day?.[i] ?? 1) === 1,
   }));
 
   return {
@@ -125,6 +164,7 @@ function normalizeOpenMeteo(raw: OpenMeteoResponse): OpenMeteoData {
       isDay: (c.is_day ?? 1) === 1,
     },
     daily,
+    hourly,
   };
 }
 
@@ -135,7 +175,9 @@ async function fetchOpenMeteo(lat: number, lon: number): Promise<OpenMeteoData> 
     current:
       'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m,wind_gusts_10m',
     daily:
-      'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max',
+      'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,et0_fao_evapotranspiration',
+    hourly:
+      'temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation,precipitation_probability,is_day',
     timezone: 'auto',
     forecast_days: '3',
   });
@@ -176,6 +218,7 @@ function buildMock(lat: number): WeatherData {
     precipitation: 0,
     precipitationProbability: 5,
     weatherCode: 2,
+    et0: isCoast ? 5.2 : 4.2,
   };
 
   const tomorrow: DailyForecast = {
@@ -187,7 +230,24 @@ function buildMock(lat: number): WeatherData {
     precipitation: 0.2,
     precipitationProbability: 20,
     weatherCode: 3,
+    et0: isCoast ? 5.4 : 4.4,
   };
+
+  const tmin = today.tempMin;
+  const tmax = today.tempMax;
+  const hourly: HourlyForecast[] = Array.from({ length: 24 }, (_, h) => {
+    // Curva de temperatura: mínima hacia las 5:00, máxima hacia las 15:00.
+    const temp = tmeanSinusoidal(tmin, tmax, h);
+    return {
+      time: `${today.date}T${String(h).padStart(2, '0')}:00`,
+      temperature: temp,
+      humidity: clamp(100 - (temp - tmin) * 3, 30, 90),
+      windSpeed: h >= 11 && h <= 18 ? 16 : 9,
+      precipitation: 0,
+      precipitationProbability: h >= 14 && h <= 18 ? 15 : 5,
+      isDay: h >= 7 && h <= 20,
+    };
+  });
 
   return {
     source: 'mock',
@@ -202,8 +262,21 @@ function buildMock(lat: number): WeatherData {
       isDay: true,
     },
     daily: [today, tomorrow],
+    hourly,
     updatedAt: now.toISOString(),
   };
+}
+
+function tmeanSinusoidal(tmin: number, tmax: number, hour: number): number {
+  // Mínima a las 5:00, máxima a las 15:00.
+  const amp = (tmax - tmin) / 2;
+  const mid = (tmax + tmin) / 2;
+  const rad = ((hour - 5) / 20) * 2 * Math.PI;
+  return mid - amp * Math.cos(rad);
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
 /**
@@ -269,6 +342,7 @@ async function fetchWeather(location: WeatherLocation): Promise<WeatherData> {
       source: 'openmeteo',
       current: om!.current,
       daily: om!.daily,
+      hourly: om!.hourly,
       updatedAt: new Date().toISOString(),
     };
   }
@@ -283,12 +357,14 @@ async function fetchWeather(location: WeatherLocation): Promise<WeatherData> {
       : om.daily[0]?.precipitation ?? aemet.today.precipitation,
     precipitationProbability:
       aemet.today.precipitationProbability || om.daily[0]?.precipitationProbability || 0,
+    et0: om.daily[0]?.et0 ?? aemet.today.et0,
   };
 
   return {
     source: 'hybrid',
     current: aemet.hasHourly ? aemet.current : om.current,
     daily: [today, ...om.daily.slice(1)],
+    hourly: om.hourly,
     updatedAt: aemet.elaboratedAt,
   };
 }

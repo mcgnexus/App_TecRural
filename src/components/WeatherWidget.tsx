@@ -6,7 +6,8 @@ import { weatherCodeToLabel } from '@/lib/weather';
 import { computeRisks, getRecommendation } from '@/lib/recommendations';
 import type { RiskLevel } from '@/lib/weather';
 import { ZONES, municipalitiesByZone, findMunicipality } from '@/lib/municipalities';
-import { CROPS, findCrop } from '@/lib/crops';
+import { CROPS, CROP_STAGES, findCrop, type CropStageValue } from '@/lib/crops';
+import { computeIrrigation, formatLitros } from '@/lib/irrigation';
 import { buildWhatsAppLink, businessName } from '@/lib/wa';
 import {
   SunIcon,
@@ -14,6 +15,7 @@ import {
   WindIcon,
   RainIcon,
   ThermometerIcon,
+  ClockIcon,
   WhatsAppIcon,
 } from './icons';
 
@@ -59,6 +61,8 @@ export default function WeatherWidget() {
   const [zone, setZone] = useState<'' | (typeof ZONES)[number]['id']>('');
   const [municipality, setMunicipality] = useState('');
   const [cropValue, setCropValue] = useState('');
+  const [stage, setStage] = useState<'' | CropStageValue>('');
+  const [hectares, setHectares] = useState('1');
   const [status, setStatus] = useState<Status>('idle');
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [error, setError] = useState('');
@@ -124,6 +128,25 @@ export default function WeatherWidget() {
     [weather, crop]
   );
 
+  const irri = useMemo(() => {
+    if (!weather || !crop || !stage) return null;
+    const ha = Number(hectares);
+    return computeIrrigation(
+      weather,
+      crop,
+      stage,
+      Number.isFinite(ha) && ha > 0 ? ha : 1
+    );
+  }, [weather, crop, stage, hectares]);
+
+  const hoursText = useMemo(() => {
+    if (!irri) return null;
+    const parts: string[] = [];
+    if (irri.hours.morning) parts.push(irri.hours.morning);
+    if (irri.hours.evening) parts.push(irri.hours.evening);
+    return parts.length ? parts.join(' y ') : `sobre las ${irri.hours.best}`;
+  }, [irri]);
+
   const waMessage = useMemo(() => {
     if (!weather || !reco) return null;
     const place = findMunicipality(municipality);
@@ -132,10 +155,16 @@ export default function WeatherWidget() {
       `Hola ${businessName()}, he consultado la recomendación de hoy.`,
       ``,
       `- Zona: ${place?.name ?? municipality}`,
-      `- Cultivo: ${cropLabel}`,
+      `- Cultivo: ${cropLabel}${irri ? ` (${irri.stageLabel})` : ''}`,
       `- Recomendación: ${reco.title}`,
+      ...(irri
+        ? [
+            `- Agua a regar: ${formatLitros(irri.liters)} litros (${irri.netMm.toFixed(1)} mm, ${formatLitros(irri.litersPerHa)} l/ha)`,
+            `- Mejores horas: ${hoursText}`,
+          ]
+        : []),
     ].join('\n');
-  }, [weather, reco, municipality, crop]);
+  }, [weather, reco, municipality, crop, irri, hoursText]);
 
   const waLink = waMessage ? buildWhatsAppLink(waMessage) : null;
   const isMock = weather?.source === 'mock';
@@ -200,6 +229,47 @@ export default function WeatherWidget() {
           <p className="hint">
             La recomendación se ajusta al tipo de cultivo y al clima local de tu
             municipio.
+          </p>
+        </div>
+
+        <div className="field">
+          <label htmlFor="stage">Etapa del cultivo</label>
+          <div className="select-wrap">
+            <select
+              id="stage"
+              value={stage}
+              onChange={(e) => setStage(e.target.value as typeof stage)}
+              disabled={!cropValue}
+            >
+              <option value="">
+                {cropValue ? 'Elige la etapa…' : 'Primero elige tu cultivo'}
+              </option>
+              {CROP_STAGES.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="hint">
+            {CROP_STAGES.find((s) => s.value === stage)?.hint ??
+              'Según la etapa, la planta gasta más o menos agua.'}
+          </p>
+        </div>
+
+        <div className="field">
+          <label htmlFor="hectares">Hectáreas regadas</label>
+          <input
+            id="hectares"
+            type="number"
+            inputMode="decimal"
+            min="0.1"
+            step="0.5"
+            value={hectares}
+            onChange={(e) => setHectares(e.target.value)}
+          />
+          <p className="hint">
+            Se usa para calcular los litros totales de tu finca.
           </p>
         </div>
 
@@ -360,6 +430,111 @@ export default function WeatherWidget() {
             <p className="reco-message">{reco.message}</p>
             <div className="reco-advice">{reco.advice}</div>
           </div>
+
+          <h3 style={{ color: 'var(--green-dark)', marginTop: 22 }}>
+            Riego: agua y mejores horas
+          </h3>
+
+          {!irri ? (
+            <p className="hint" style={{ marginTop: 8 }}>
+              Elige tu <strong>cultivo</strong> y su <strong>etapa</strong> en
+              el formulario para calcular cuánta agua regar y cuándo es mejor
+              hacerlo.
+            </p>
+          ) : (
+            <div className="irri">
+              {(reco.level === 'avoid-heat' || reco.level === 'avoid-wind') && (
+                <div className="error-box" role="alert" style={{ marginTop: 0 }}>
+                  Hoy es mejor <strong>no regar</strong> por{' '}
+                  {reco.level === 'avoid-heat' ? 'el calor extremo' : 'el viento fuerte'}.
+                  Si es imprescindible, usa las horas indicadas y riego por goteo.
+                </div>
+              )}
+
+              <div className="irri-grid">
+                <div className="metric irri-main">
+                  <div className="metric-top">
+                    <DropletIcon width={16} height={16} /> Agua a regar hoy
+                  </div>
+                  <div className="metric-value">
+                    {formatLitros(irri.liters)}
+                    <small> litros</small>
+                  </div>
+                  <div className="irri-sub">
+                    en tu finca de {irri.hectares} ha
+                  </div>
+                </div>
+
+                <div className="metric">
+                  <div className="metric-top">Por hectárea</div>
+                  <div className="metric-value">
+                    {formatLitros(irri.litersPerHa)}
+                    <small> l/ha</small>
+                  </div>
+                  <div className="irri-sub">
+                    {irri.netMm.toFixed(1)} mm de agua neta
+                  </div>
+                </div>
+
+                <div className="metric">
+                  <div className="metric-top">Necesidad del cultivo</div>
+                  <div className="metric-value">
+                    {irri.etc.toFixed(1)}
+                    <small> mm</small>
+                  </div>
+                  <div className="irri-sub">
+                    ET0 {irri.et0.toFixed(1)} × Kc {irri.kc.toFixed(2)} (
+                    {irri.cropLabel}, {irri.stageLabel.toLowerCase()})
+                  </div>
+                </div>
+
+                <div className="metric">
+                  <div className="metric-top">
+                    <RainIcon width={16} height={16} /> Lluvia aprovechable
+                  </div>
+                  <div className="metric-value">
+                    {irri.rain.toFixed(1)}
+                    <small> mm</small>
+                  </div>
+                  <div className="irri-sub">
+                    {irri.coveredByRain
+                      ? 'la lluvia cubre la necesidad'
+                      : 'restada de la necesidad del cultivo'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="hours-box">
+                <div className="metric-top">
+                  <ClockIcon width={16} height={16} /> Mejores horas para regar
+                </div>
+                <div className="hours-row">
+                  {irri.hours.morning && (
+                    <span className="hour-chip">
+                      Mañana {irri.hours.morning}
+                    </span>
+                  )}
+                  {irri.hours.evening && (
+                    <span className="hour-chip">
+                      Tarde/noche {irri.hours.evening}
+                    </span>
+                  )}
+                  <span className="hour-chip hour-chip-best">
+                    Mejor hora {irri.hours.best}
+                  </span>
+                </div>
+                {irri.hours.reasons.length > 0 && (
+                  <ul className="irri-reasons">
+                    {irri.hours.reasons.map((r, i) => (
+                      <li key={i}>{r}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <p className="irri-note">{irri.note}</p>
+            </div>
+          )}
 
           {waLink && (
             <a

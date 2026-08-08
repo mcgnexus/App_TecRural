@@ -599,6 +599,83 @@ textarea {
   color: var(--red);
 }
 
+/* ---------- Riego: agua y mejores horas ---------- */
+.irri-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.irri-main {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, #eaf5ea 0%, #f4fbf4 100%);
+  border-color: #cfe3cf;
+}
+
+.irri-sub {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.hours-box {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  padding: 16px;
+}
+
+.hours-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.hour-chip {
+  display: inline-block;
+  background: var(--sky-light);
+  border: 1px solid #c3dcf4;
+  color: #245a96;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.hour-chip-best {
+  background: var(--green);
+  border-color: var(--green-dark);
+  color: #fff;
+}
+
+.irri-reasons {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  font-size: 0.88rem;
+  color: var(--ink);
+  display: grid;
+  gap: 4px;
+}
+
+.irri-note {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-top: 12px;
+  font-style: italic;
+}
+
+@media (max-width: 480px) {
+  .irri-grid {
+    grid-template-columns: 1fr;
+  }
+  .irri-main {
+    grid-column: 1;
+  }
+}
+
 /* ---------- Servicios ---------- */
 .plans {
   display: grid;

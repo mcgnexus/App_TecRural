@@ -14,10 +14,14 @@ interés real** antes de invertir más en el proyecto.
   Salobreña, Motril…).
 - Selección de cultivo (olivar, almendro, pistacho, hortícolas, aguacate,
   chirimoyo, mango, viñedo, otros).
-- Tiempo actual y previsión a 3 días con **estrategia híbrida**: **AEMET**
+- **Tiempo actual y previsión a 3 días** con estrategia híbrida: **AEMET**
   (predicción oficial por municipio) para hoy y condiciones actuales, y
   **Open-Meteo** (sin API key) para la tendencia de los próximos días, los mm
   de lluvia y como respaldo.
+- **Riego calculado**: cantidad de agua (litros) según evapotranspiración
+  (ET0 FAO-56 de Open-Meteo × coeficiente de cultivo Kc por etapa fenológica)
+  menos la lluvia prevista, y **mejores horas** para regar según el clima
+  horario (calor, viento y lluvia).
 - Indicadores de **riesgo de calor, viento y sequedad**.
 - **Recomendación orientativa de riego** adaptada al cultivo:
   - "No parece necesario regar hoy".
