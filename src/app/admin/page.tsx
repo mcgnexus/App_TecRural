@@ -173,7 +173,7 @@ export default function AdminPage() {
           <h1 className="admin-title">Contactos recibidos</h1>
           <p className="admin-sub">
             {total} contacto{total === 1 ? '' : 's'} guardado
-            {total === 1 ? '' : 's'} en la base de datos (SQLite).
+            {total === 1 ? '' : 's'} en la base de datos.
           </p>
         </div>
         <div className="spacer" />

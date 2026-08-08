@@ -89,7 +89,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ errors }, { status: 400 });
     }
 
-    const lead = createLead({
+    const lead = await createLead({
       name,
       phone,
       municipality,

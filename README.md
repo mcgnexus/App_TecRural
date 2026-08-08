@@ -36,7 +36,8 @@ interés real** antes de invertir más en el proyecto.
 ## Stack
 
 - **Next.js 14** (App Router) + **React 18** + **TypeScript**.
-- **SQLite** vía `better-sqlite3` (base de datos ligera en el propio VPS).
+- **Neon (PostgreSQL)** como base de datos de contactos, con **SQLite**
+  (`data/tecrural.db`) como respaldo local si no hay `DATABASE_URL`.
 - **AEMET OpenData** (datos oficiales por municipio, API key gratuita) +
   **Open-Meteo** como respaldo y para la previsión a varios días.
 - CSS propio limpio, sin framework de UI.
@@ -53,7 +54,7 @@ tecrural/
 │   └── icons/                 # iconos generados (npm run icons)
 ├── scripts/
 │   └── generate-icons.mjs     # genera los PNG del PWA sin dependencias
-├── data/                      # base de datos SQLite (se crea sola)
+├── data/                      # SQLite local (solo respaldo sin DATABASE_URL)
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx         # layout, metadatos, registro del SW
@@ -66,7 +67,7 @@ tecrural/
 │   │       └── admin/         # sesión y listado de contactos
 │   ├── components/            # Header, WeatherWidget, LeadForm, Services…
 │   ├── lib/
-│   │   ├── db.ts              # SQLite (leads)
+│   │   ├── db.ts              # Neon (PostgreSQL) o SQLite (respaldo local)
 │   │   ├── weather.ts         # Open-Meteo + mock de respaldo
 │   │   ├── recommendations.ts # riesgos y recomendación de riego
 │   │   ├── municipalities.ts  # zonas y municipios con coordenadas
@@ -88,6 +89,7 @@ npm install
 # Configura tus variables (número de WhatsApp, contraseña del panel…)
 cp .env.example .env.local
 #   edita .env.local y cambia WHATSAPP_NUMBER y ADMIN_PASSWORD
+#   (opcional) define DATABASE_URL para usar Neon en vez de SQLite local
 
 npm run dev
 ```
@@ -96,6 +98,9 @@ Abre <http://localhost:3000>.
 
 > Nota: si `npm install` no compila `better-sqlite3` (instaladores bloqueados en npm ≥ 10),
 > ejecuta: `npm install-scripts approve better-sqlite3 && npm rebuild better-sqlite3`.
+>
+> `better-sqlite3` solo es necesario para el respaldo local sin `DATABASE_URL`;
+> si siempre usas Neon puedes quitarlo de `package.json`.
 
 ## Configurar el número de WhatsApp
 
@@ -111,15 +116,20 @@ este número mediante enlaces `wa.me`.
 
 ## Dónde se guardan los contactos
 
-En la base de datos **SQLite** local, en el archivo:
+En **Neon (PostgreSQL)**: la app lee `DATABASE_URL` (el driver crea la tabla
+`leads` automáticamente en la primera consulta). Es la base de datos de
+producción: está en la nube, es gestionada y con **backups automáticos**.
+
+Si `DATABASE_URL` no está definida, la app usa como respaldo una **SQLite**
+local en:
 
 ```
 data/tecrural.db
 ```
 
-Se crea automáticamente en la primera petición. No la borres ni la subas a Git
-(está en `.gitignore`). Haz copias de seguridad si te importan los contactos
-(p. ej. `cp data/tecrural.db backups/`).
+Ese archivo se crea solo y está en `.gitignore` (no lo subas a Git). La tabla
+y los datos son equivalentes en ambos motores, así que cambiar entre uno y
+otro solo requiere definir o quitar `DATABASE_URL`.
 
 ## Panel de administración
 
@@ -153,6 +163,7 @@ npm install
 # variables de producción
 cp .env.example .env.local
 nano .env.local
+#   DATABASE_URL=postgresql://... (Neon, recomendado)
 #   WHATSAPP_NUMBER=...
 #   ADMIN_PASSWORD=una-clave-fuerte
 #   NEXT_PUBLIC_SITE_URL=https://tu-dominio.com

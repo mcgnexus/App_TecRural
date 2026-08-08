@@ -13,7 +13,7 @@ export async function DELETE(
   if (!Number.isInteger(id) || id <= 0) {
     return NextResponse.json({ error: 'Identificador no válido.' }, { status: 400 });
   }
-  const ok = deleteLead(id);
+  const ok = await deleteLead(id);
   if (!ok) {
     return NextResponse.json({ error: 'Contacto no encontrado.' }, { status: 404 });
   }
