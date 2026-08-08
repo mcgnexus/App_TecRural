@@ -336,6 +336,68 @@ textarea {
   margin-top: 5px;
 }
 
+/* ---------- Fenología (fase estimada del cultivo) ---------- */
+.pheno-suggest {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px dashed var(--green);
+  border-radius: 8px;
+  background: var(--green-light);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--green-dark);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pheno-badge {
+  align-self: flex-start;
+  background: var(--green);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 1px 8px;
+  margin-bottom: 2px;
+}
+
+.pheno-card {
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--green);
+  border-radius: 10px;
+  background: var(--paper);
+  padding: 14px 16px;
+  margin-top: 10px;
+}
+
+.pheno-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pheno-stage {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--green-dark);
+}
+
+.pheno-conf {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.pheno-reason {
+  margin-top: 6px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
 /* ---------- Estado de carga / error ---------- */
 .status {
   display: flex;

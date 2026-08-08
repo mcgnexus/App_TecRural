@@ -3,6 +3,7 @@ import { findMunicipality } from './municipalities';
 import { findCrop } from './crops';
 import { getWeather } from './weather';
 import { computeAlarms, type Alarm } from './alarms';
+import { currentPhenology } from './phenology';
 import { sendWhatsApp } from './whatsapp';
 import { businessName } from './wa';
 
@@ -42,12 +43,16 @@ function todayLocal(): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-function buildMessage(alarms: Alarm[], opts: { zona: string; cultivo: string }): string {
+function buildMessage(
+  alarms: Alarm[],
+  opts: { zona: string; cultivo: string; fase?: string }
+): string {
   const lines = [
     `${businessName()} · Aviso meteorológico`,
     `Zona: ${opts.zona} · Cultivo: ${opts.cultivo}`,
-    '',
   ];
+  if (opts.fase) lines.push(`Fase del cultivo: ${opts.fase}`);
+  lines.push('');
   for (const a of alarms) {
     lines.push(`• ${a.title.toUpperCase()} [${LEVEL_LABEL[a.level]}]`);
     lines.push(`  ${a.message}`);
@@ -147,6 +152,7 @@ export async function runAlertChecks(
       const message = buildMessage(newAlarms, {
         zona: place.name,
         cultivo: crop?.label ?? lead.crop,
+        fase: currentPhenology(lead.crop, place.zone).main.label,
       });
 
       if (dryRun) {

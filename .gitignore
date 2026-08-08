@@ -18,6 +18,7 @@
 .DS_Store
 *.pem
 npm-debug.log*
+*.tsbuildinfo
 yarn-debug.log*
 yarn-error.log*
 

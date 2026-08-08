@@ -22,6 +22,11 @@ interés real** antes de invertir más en el proyecto.
   (ET0 FAO-56 de Open-Meteo × coeficiente de cultivo Kc por etapa fenológica)
   menos la lluvia prevista, y **mejores horas** para regar según el clima
   horario (calor, viento y lluvia).
+- **Fenología orientativa**: la app estima la fase del cultivo según la fecha
+  y la zona (Altiplano o Costa Tropical) y **sugiere automáticamente la etapa**
+  para el cálculo de riego. El agricultor puede corregirla manualmente. Incluye
+  una tarjeta con la fase probable, el grado de confianza y el motivo, y se
+  añade la fase al mensaje de WhatsApp y a los avisos meteorológicos.
 - **Alarmas meteorológicas**: avisos de calor extremo, helada, frío, tormentas,
   viento fuerte, lluvia intensa y sequía, con sensibilidad por cultivo
   (tropicales como aguacate o chirimoyo avisan antes). Niveles de alerta,
@@ -79,6 +84,7 @@ tecrural/
 │   │   ├── weather.ts         # Open-Meteo + mock de respaldo
 │   │   ├── aemet.ts           # AEMET (hoy y condiciones actuales)
 │   │   ├── irrigation.ts      # cálculo de riego y mejores horas
+│   │   ├── phenology.ts       # calendario fenológico por cultivo y zona
 │   │   ├── alarms.ts          # detección de alarmas meteorológicas
 │   │   ├── recommendations.ts # riesgos y recomendación de riego
 │   │   ├── municipalities.ts  # zonas y municipios con coordenadas
@@ -269,6 +275,27 @@ Notas:
 - AEMET limita el número de peticiones (~30/min y cupo diario); la caché y el
   respaldo evitan que se note. Para cambiar el comportamiento edita
   `src/lib/weather.ts` y `src/lib/aemet.ts`.
+
+## Fenología orientativa del cultivo
+
+La app incluye un calendario fenológico por cultivo y zona en
+`src/lib/phenology.ts`:
+
+- Cada cultivo (olivar, almendro, pistacho, hortícolas, aguacate, chirimoyo,
+  mango, viñedo, otros) define sus **fases concretas** (p. ej. "Engorde del
+  fruto") y las ventanas de fechas aproximadas para el **Altiplano** y la
+  **Costa Tropical**, con una **probabilidad estimada** y una breve explicación.
+- `currentPhenology(crop, zone, date)` devuelve la fase más probable para una
+  fecha, su equivalente genérico para el riego (Kc FAO-56) y los posibles
+  avisos (p. ej. "el aguacate no es viable al aire libre en el Altiplano").
+- En la web, esa fase **sugiere automáticamente la etapa** del cultivo en el
+  formulario; el agricultor puede elegir otra manualmente y la app lo respeta
+  (botón/etiqueta "Auto" cuando es automática).
+- La fase también se incluye en los **mensajes de WhatsApp** de la consulta y
+  en los **avisos meteorológicos automáticos** (`src/lib/notify.ts`).
+
+Las fechas son orientativas para divulgación, no una garantía: cada finca y
+variedad adelanta o retrasa el ciclo según su microclima y manejo.
 
 ## Idiomas y textos
 

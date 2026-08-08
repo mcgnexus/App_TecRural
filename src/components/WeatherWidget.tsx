@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { WeatherData, WeatherSource } from '@/lib/weather';
 import { weatherCodeToLabel } from '@/lib/weather';
 import { computeRisks, getRecommendation } from '@/lib/recommendations';
@@ -9,6 +9,7 @@ import { ZONES, municipalitiesByZone, findMunicipality } from '@/lib/municipalit
 import { CROPS, CROP_STAGES, findCrop, type CropStageValue } from '@/lib/crops';
 import { computeIrrigation, formatLitros } from '@/lib/irrigation';
 import { computeAlarms, type AlarmKind } from '@/lib/alarms';
+import { currentPhenology, formatDateLong } from '@/lib/phenology';
 import { buildWhatsAppLink, businessName } from '@/lib/wa';
 import {
   SunIcon,
@@ -100,6 +101,7 @@ export default function WeatherWidget() {
   const [municipality, setMunicipality] = useState('');
   const [cropValue, setCropValue] = useState('');
   const [stage, setStage] = useState<'' | CropStageValue>('');
+  const [stageTouched, setStageTouched] = useState(false);
   const [hectares, setHectares] = useState('1');
   const [status, setStatus] = useState<Status>('idle');
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -113,11 +115,44 @@ export default function WeatherWidget() {
 
   const crop = useMemo(() => findCrop(cropValue), [cropValue]);
 
+  /** Fecha de hoy, refrescada a medianoche para que la fenología no quede obsoleta. */
+  const [today, setToday] = useState(() => new Date());
+
+  useEffect(() => {
+    const now = new Date();
+    const nextMidnight = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1
+    );
+    const t = setTimeout(
+      () => setToday(new Date()),
+      nextMidnight.getTime() - now.getTime()
+    );
+    return () => clearTimeout(t);
+  }, []);
+
+  /** Fase fenológica deducida por cultivo + zona + fecha de hoy. */
+  const deduced = useMemo(
+    () => (cropValue && zone ? currentPhenology(cropValue, zone, today) : null),
+    [cropValue, zone, today]
+  );
+
+  // Cuando aún no se ha elegido la etapa a mano, se sugiere automáticamente la
+  // que corresponde a la fecha y la zona.
+  useEffect(() => {
+    if (!stageTouched && deduced) {
+      setStage(deduced.kcStage);
+    }
+  }, [deduced, stageTouched]);
+
   const onZoneChange = (value: string) => {
     setZone(value as typeof zone);
     setMunicipality('');
     setWeather(null);
     setStatus('idle');
+    setStage('');
+    setStageTouched(false);
   };
 
   const onMunicipalityChange = (value: string) => {
@@ -206,6 +241,9 @@ export default function WeatherWidget() {
       ``,
       `- Zona: ${place?.name ?? municipality}`,
       `- Cultivo: ${cropLabel}${irri ? ` (${irri.stageLabel})` : ''}`,
+      ...(deduced
+        ? [`- Fase probable: ${deduced.main.label} (~${deduced.confidence}%)`]
+        : []),
       `- Alertas: ${alertTitles.length ? alertTitles.join(', ') : 'sin alertas destacadas'}`,
       `- Recomendación: ${reco.title}`,
       ...(irri
@@ -215,7 +253,7 @@ export default function WeatherWidget() {
           ]
         : []),
     ].join('\n');
-  }, [weather, reco, municipality, crop, irri, hoursText, alertTitles]);
+  }, [weather, reco, municipality, crop, irri, hoursText, alertTitles, deduced]);
 
   const waLink = waMessage ? buildWhatsAppLink(waMessage) : null;
   const isMock = weather?.source === 'mock';
@@ -267,7 +305,11 @@ export default function WeatherWidget() {
             <select
               id="crop"
               value={cropValue}
-              onChange={(e) => setCropValue(e.target.value)}
+              onChange={(e) => {
+                setCropValue(e.target.value);
+                setStage('');
+                setStageTouched(false);
+              }}
             >
               <option value="">Elige tu cultivo…</option>
               {CROPS.map((c) => (
@@ -289,7 +331,10 @@ export default function WeatherWidget() {
             <select
               id="stage"
               value={stage}
-              onChange={(e) => setStage(e.target.value as typeof stage)}
+              onChange={(e) => {
+                setStage(e.target.value as typeof stage);
+                setStageTouched(true);
+              }}
               disabled={!cropValue}
             >
               <option value="">
@@ -306,6 +351,22 @@ export default function WeatherWidget() {
             {CROP_STAGES.find((s) => s.value === stage)?.hint ??
               'Según la etapa, la planta gasta más o menos agua.'}
           </p>
+          {deduced && (
+            <div className="pheno-suggest">
+              <span className="pheno-badge">Auto</span>
+              <span>
+                <strong>
+                  Fase probable el {formatDateLong(today)}:{' '}
+                  {deduced.main.label}
+                </strong>{' '}
+                ({deduced.confidence}% de probabilidad).
+                {stageTouched &&
+                  stage !== deduced.kcStage &&
+                  ' Has elegido otra etapa manualmente.'}
+              </span>
+              <span className="pheno-reason">{deduced.reason}</span>
+            </div>
+          )}
         </div>
 
         <div className="field">
@@ -467,6 +528,34 @@ export default function WeatherWidget() {
                 {activeAlerts.map((a) => a.title).join(' · ')}
               </div>
             </div>
+          )}
+
+          {deduced && (
+            <>
+              <h3 style={{ color: 'var(--green-dark)', marginTop: 22 }}>
+                Fase fenológica estimada
+              </h3>
+              <div className="pheno-card">
+                <div className="pheno-main">
+                  <span className="pheno-stage">{deduced.main.label}</span>
+                  <span className="pheno-conf">
+                    {deduced.cropLabel} · {formatDateLong(today)} · ~
+                    {deduced.confidence}% de las fincas
+                  </span>
+                </div>
+                <p className="pheno-reason">{deduced.reason}</p>
+                <p className="hint" style={{ marginTop: 8 }}>
+                  Fase genérica usada en el riego:{' '}
+                  <strong>
+                    {CROP_STAGES.find((s) => s.value === deduced.kcStage)
+                      ?.label ?? deduced.kcStage}
+                  </strong>
+                  {stageTouched && stage !== deduced.kcStage
+                    ? ` · tienes elegida "${CROP_STAGES.find((s) => s.value === stage)?.label}" manualmente`
+                    : ''}
+                </p>
+              </div>
+            </>
           )}
 
           <h3 style={{ color: 'var(--green-dark)', marginTop: 22 }}>
