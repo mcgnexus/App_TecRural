@@ -253,6 +253,14 @@ textarea {
   padding: 44px 0;
 }
 
+.section-consult {
+  padding-top: 16px;
+}
+
+.section-disclaimer {
+  padding-top: 10px;
+}
+
 .section-alt {
   background: var(--cloud);
   border-top: 1px solid var(--line);
@@ -263,6 +271,10 @@ textarea {
   text-align: center;
   max-width: 620px;
   margin: 0 auto 26px;
+}
+
+.section-head-gap {
+  margin-top: 36px;
 }
 
 .section-head h2 {
@@ -557,6 +569,19 @@ textarea {
   width: 60%;
 }
 
+.form-skeleton-line {
+  height: 40px;
+}
+
+.form-skeleton-gap {
+  margin-top: 16px;
+}
+
+.form-skeleton-btn {
+  height: 52px;
+  margin-top: 16px;
+}
+
 .skeleton-reco {
   height: 90px;
   margin-bottom: 12px;
@@ -588,6 +613,57 @@ textarea {
   text-align: center;
 }
 
+/* ---------- Cabecera y títulos de resultados ---------- */
+.results-card {
+  margin-top: 20px;
+}
+
+.results-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.results-title,
+.section-title {
+  color: var(--green-dark);
+}
+
+.section-title {
+  margin-top: 22px;
+}
+
+.source-badge {
+  font-size: 0.75rem;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.source-badge.real {
+  color: var(--green-dark);
+  background: var(--green-light);
+  border: 1px solid #d5e5d5;
+}
+
+.source-badge.mock {
+  color: var(--muted);
+  background: var(--cloud);
+}
+
+.hint-mt {
+  margin-top: 8px;
+}
+
+.wa-cta-block {
+  margin-top: 18px;
+}
+
+.error-box.inline {
+  margin-top: 0;
+}
+
 /* ---------- Panel de tiempo ---------- */
 .weather-grid {
   display: grid;
@@ -606,6 +682,10 @@ textarea {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 16px 18px;
+}
+
+.weather-right {
+  text-align: right;
 }
 
 .temp-now {
@@ -636,6 +716,11 @@ textarea {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 14px;
+  margin: 0;
+}
+
+.metric dd {
+  margin: 0;
 }
 
 .metric-top {
@@ -694,6 +779,11 @@ textarea {
   font-size: 0.82rem;
   color: var(--sky);
   margin-top: 3px;
+}
+
+.forecast-day .cond {
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 
 /* ---------- Riesgos ---------- */
@@ -958,6 +1048,11 @@ textarea {
   gap: 14px;
 }
 
+.services-cta {
+  text-align: center;
+  margin-top: 30px;
+}
+
 .service {
   display: flex;
   gap: 12px;
@@ -1005,6 +1100,11 @@ textarea {
 
 .form-actions {
   margin-top: 6px;
+}
+
+.form-note {
+  text-align: center;
+  margin-top: 10px;
 }
 
 .form-success {

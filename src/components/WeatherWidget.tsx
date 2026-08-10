@@ -486,7 +486,7 @@ export default function WeatherWidget() {
             </div>
             <div className="skeleton skeleton-reco" />
             <div className="skeleton skeleton-line" />
-            <div className="skeleton skeleton-line short" style={{ marginTop: 8 }} />
+            <div className="skeleton skeleton-line short hint-mt" />
           </div>
         </>
       )}
@@ -498,20 +498,13 @@ export default function WeatherWidget() {
       )}
 
       {status === 'ok' && weather && risks && reco && (
-        <div ref={resultsRef} className="card" style={{ marginTop: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 6 }}>
-            <h3 style={{ color: 'var(--green-dark)' }}>
+        <div ref={resultsRef} className="card results-card">
+          <div className="results-head">
+            <h3 className="results-title">
               Tiempo en {municipality}
             </h3>
             <span
-              style={{
-                fontSize: '0.75rem',
-                color: isMock ? 'var(--muted)' : 'var(--green-dark)',
-                background: isMock ? 'var(--cloud)' : 'var(--green-light)',
-                borderRadius: 999,
-                padding: '3px 10px',
-                border: isMock ? undefined : '1px solid #d5e5d5',
-              }}
+              className={`source-badge ${isMock ? 'mock' : 'real'}`}
               title={SOURCE_TITLE[weather.source]}
             >
               {SOURCE_LABEL[weather.source]}
@@ -532,7 +525,7 @@ export default function WeatherWidget() {
                     weatherCodeToLabel(weather.current.weatherCode)}
                 </div>
               </div>
-              <div style={{ textAlign: 'right' }}>
+              <div className="weather-right">
                 <div className="weather-label">
                   {weather.current.isDay ? 'Día' : 'Noche'}
                 </div>
@@ -546,45 +539,45 @@ export default function WeatherWidget() {
               </div>
             </div>
 
-            <div className="metric">
-              <div className="metric-top">
+            <dl className="metric">
+              <dt className="metric-top">
                 <DropletIcon width={16} height={16} /> Humedad
-              </div>
-              <div className="metric-value">
+              </dt>
+              <dd className="metric-value">
                 {Math.round(weather.current.humidity)}
                 <small> %</small>
-              </div>
-            </div>
+              </dd>
+            </dl>
 
-            <div className="metric">
-              <div className="metric-top">
+            <dl className="metric">
+              <dt className="metric-top">
                 <WindIcon width={16} height={16} /> Viento
-              </div>
-              <div className="metric-value">
+              </dt>
+              <dd className="metric-value">
                 {Math.round(weather.current.windSpeed)}
                 <small> km/h</small>
-              </div>
-            </div>
+              </dd>
+            </dl>
 
-            <div className="metric">
-              <div className="metric-top">
+            <dl className="metric">
+              <dt className="metric-top">
                 <RainIcon width={16} height={16} /> Lluvia hoy
-              </div>
-              <div className="metric-value">
+              </dt>
+              <dd className="metric-value">
                 {weather.daily[0]?.precipitation.toFixed(1)}
                 <small> mm</small>
-              </div>
-            </div>
+              </dd>
+            </dl>
 
-            <div className="metric">
-              <div className="metric-top">
+            <dl className="metric">
+              <dt className="metric-top">
                 <ThermometerIcon width={16} height={16} /> Rachas
-              </div>
-              <div className="metric-value">
+              </dt>
+              <dd className="metric-value">
                 {Math.round(weather.current.windGusts)}
                 <small> km/h</small>
-              </div>
-            </div>
+              </dd>
+            </dl>
 
             <div className="forecast">
               <div className="metric-top">Previsión de los próximos días</div>
@@ -599,7 +592,7 @@ export default function WeatherWidget() {
                       {d.precipitationProbability}% · {d.precipitation.toFixed(1)} mm
                     </div>
                     {d.condition && (
-                      <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+                      <div className="cond">
                         {d.condition}
                       </div>
                     )}
@@ -627,7 +620,7 @@ export default function WeatherWidget() {
 
           {deduced && (
             <>
-              <h3 style={{ color: 'var(--green-dark)', marginTop: 22 }}>
+              <h3 className="section-title">
                 Fase fenológica estimada
               </h3>
               <div className="pheno-card">
@@ -639,7 +632,7 @@ export default function WeatherWidget() {
                   </span>
                 </div>
                 <p className="pheno-reason">{deduced.reason}</p>
-                <p className="hint" style={{ marginTop: 8 }}>
+                <p className="hint hint-mt">
                   Fase genérica usada en el riego:{' '}
                   <strong>
                     {CROP_STAGES.find((s) => s.value === deduced.kcStage)
@@ -653,7 +646,7 @@ export default function WeatherWidget() {
             </>
           )}
 
-          <h3 style={{ color: 'var(--green-dark)', marginTop: 22 }}>
+          <h3 className="section-title">
             Riesgos para el cultivo
           </h3>
           <div className="risks">
@@ -672,7 +665,7 @@ export default function WeatherWidget() {
 
           {weather.avisos && weather.avisos.length > 0 && (
             <>
-              <h3 style={{ color: 'var(--green-dark)', marginTop: 22 }}>
+              <h3 className="section-title">
                 Avisos oficiales de AEMET
               </h3>
               <div className="avisos">
@@ -702,12 +695,12 @@ export default function WeatherWidget() {
             </>
           )}
 
-          <h3 style={{ color: 'var(--green-dark)', marginTop: 22 }}>
+          <h3 className="section-title">
             Alertas meteorológicas
           </h3>
 
           {alarms.length === 0 ? (
-            <p className="hint" style={{ marginTop: 8 }}>
+            <p className="hint hint-mt">
               Sin alertas destacadas hoy en tu zona.
             </p>
           ) : (
@@ -733,12 +726,12 @@ export default function WeatherWidget() {
             </div>
           )}
 
-          <h3 style={{ color: 'var(--green-dark)', marginTop: 22 }}>
+          <h3 className="section-title">
             Riego: agua y mejores horas
           </h3>
 
           {!irri ? (
-            <p className="hint" style={{ marginTop: 8 }}>
+            <p className="hint hint-mt">
               Elige tu <strong>cultivo</strong> y su <strong>etapa</strong> en
               el formulario para calcular cuánta agua regar y cuándo es mejor
               hacerlo.
@@ -746,7 +739,7 @@ export default function WeatherWidget() {
           ) : (
             <div className="irri">
               {(reco.level === 'avoid-heat' || reco.level === 'avoid-wind') && (
-                <div className="error-box" role="alert" style={{ marginTop: 0 }}>
+                <div className="error-box inline" role="alert">
                   Hoy es mejor <strong>no regar</strong> por{' '}
                   {reco.level === 'avoid-heat' ? 'el calor extremo' : 'el viento fuerte'}.
                   Si es imprescindible, usa las horas indicadas y riego por goteo.
@@ -754,56 +747,56 @@ export default function WeatherWidget() {
               )}
 
               <div className="irri-grid">
-                <div className="metric irri-main">
-                  <div className="metric-top">
+                <dl className="metric irri-main">
+                  <dt className="metric-top">
                     <DropletIcon width={16} height={16} /> Agua a regar hoy
-                  </div>
-                  <div className="metric-value">
+                  </dt>
+                  <dd className="metric-value">
                     {formatLitros(irri.liters)}
                     <small> litros</small>
-                  </div>
-                  <div className="irri-sub">
-                    en tu finca de {irri.hectares} ha
-                  </div>
-                </div>
+                    <div className="irri-sub">
+                      en tu finca de {irri.hectares} ha
+                    </div>
+                  </dd>
+                </dl>
 
-                <div className="metric">
-                  <div className="metric-top">Por hectárea</div>
-                  <div className="metric-value">
+                <dl className="metric">
+                  <dt className="metric-top">Por hectárea</dt>
+                  <dd className="metric-value">
                     {formatLitros(irri.litersPerHa)}
                     <small> l/ha</small>
-                  </div>
-                  <div className="irri-sub">
-                    {irri.netMm.toFixed(1)} mm de agua neta
-                  </div>
-                </div>
+                    <div className="irri-sub">
+                      {irri.netMm.toFixed(1)} mm de agua neta
+                    </div>
+                  </dd>
+                </dl>
 
-                <div className="metric">
-                  <div className="metric-top">Necesidad del cultivo</div>
-                  <div className="metric-value">
+                <dl className="metric">
+                  <dt className="metric-top">Necesidad del cultivo</dt>
+                  <dd className="metric-value">
                     {irri.etc.toFixed(1)}
                     <small> mm</small>
-                  </div>
-                  <div className="irri-sub">
-                    ET0 {irri.et0.toFixed(1)} × Kc {irri.kc.toFixed(2)} (
-                    {irri.cropLabel}, {irri.stageLabel.toLowerCase()})
-                  </div>
-                </div>
+                    <div className="irri-sub">
+                      ET0 {irri.et0.toFixed(1)} × Kc {irri.kc.toFixed(2)} (
+                      {irri.cropLabel}, {irri.stageLabel.toLowerCase()})
+                    </div>
+                  </dd>
+                </dl>
 
-                <div className="metric">
-                  <div className="metric-top">
+                <dl className="metric">
+                  <dt className="metric-top">
                     <RainIcon width={16} height={16} /> Lluvia aprovechable
-                  </div>
-                  <div className="metric-value">
+                  </dt>
+                  <dd className="metric-value">
                     {irri.rain.toFixed(1)}
                     <small> mm</small>
-                  </div>
-                  <div className="irri-sub">
-                    {irri.coveredByRain
-                      ? 'la lluvia cubre la necesidad'
-                      : 'restada de la necesidad del cultivo'}
-                  </div>
-                </div>
+                    <div className="irri-sub">
+                      {irri.coveredByRain
+                        ? 'la lluvia cubre la necesidad'
+                        : 'restada de la necesidad del cultivo'}
+                    </div>
+                  </dd>
+                </dl>
               </div>
 
               <div className="hours-box">
@@ -840,11 +833,10 @@ export default function WeatherWidget() {
 
           {waLink && (
             <a
-              className="btn btn-wa btn-block"
+              className="btn btn-wa btn-block wa-cta-block"
               href={waLink}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ marginTop: 18 }}
             >
               <WhatsAppIcon /> Hablar con {businessName()}
             </a>

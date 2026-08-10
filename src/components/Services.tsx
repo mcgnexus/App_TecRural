@@ -119,7 +119,7 @@ export default function Services() {
           ))}
         </div>
 
-        <div className="section-head" style={{ marginTop: 36 }}>
+        <div className="section-head section-head-gap">
           <h2>Qué hacemos</h2>
           <p>Instalación de sensores o estación: presupuesto personalizado desde 180 €.</p>
         </div>
@@ -138,7 +138,7 @@ export default function Services() {
           ))}
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: 30 }}>
+        <div className="services-cta">
           <a
             className="btn btn-wa btn-lg"
             href={waLink}

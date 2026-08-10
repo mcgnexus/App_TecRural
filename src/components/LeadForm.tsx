@@ -253,7 +253,7 @@ export default function LeadForm() {
         >
           {submitting ? 'Enviando…' : 'Recibir avisos agrícolas'}
         </button>
-        <p className="hint" style={{ textAlign: 'center', marginTop: 10 }}>
+        <p className="hint form-note">
           Solo usaremos tus datos para enviarte información de {businessName()}.
         </p>
       </div>

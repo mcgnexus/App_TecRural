@@ -14,11 +14,11 @@ const LeadForm = nextDynamic(() => import('@/components/LeadForm'), {
   ssr: false,
   loading: () => (
     <div className="card form-card" aria-hidden="true">
-      <div className="skeleton skeleton-line" style={{ height: 40 }} />
-      <div className="skeleton skeleton-line" style={{ height: 40, marginTop: 16 }} />
-      <div className="skeleton skeleton-line" style={{ height: 40, marginTop: 16 }} />
-      <div className="skeleton skeleton-line" style={{ height: 40, marginTop: 16 }} />
-      <div className="skeleton skeleton-block" style={{ height: 52, marginTop: 16 }} />
+      <div className="skeleton skeleton-line form-skeleton-line" />
+      <div className="skeleton skeleton-line form-skeleton-line form-skeleton-gap" />
+      <div className="skeleton skeleton-line form-skeleton-line form-skeleton-gap" />
+      <div className="skeleton skeleton-line form-skeleton-line form-skeleton-gap" />
+      <div className="skeleton skeleton-block form-skeleton-btn" />
     </div>
   ),
 });
@@ -49,7 +49,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="consulta" className="section" style={{ paddingTop: 16 }}>
+        <section id="consulta" className="section section-consult">
           <div className="container">
             <WeatherWidget />
           </div>
@@ -70,7 +70,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="section" style={{ paddingTop: 10 }}>
+        <section className="section section-disclaimer">
           <div className="container">
             <div className="disclaimer">
               <strong>Aviso:</strong> las recomendaciones de esta web son
