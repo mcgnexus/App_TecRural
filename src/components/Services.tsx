@@ -111,11 +111,9 @@ export default function Services() {
               </ul>
               <a
                 className={`btn ${plan.featured ? 'btn-primary' : 'btn-ghost'}`}
-                href={waLink}
-                target="_blank"
-                rel="noopener noreferrer"
+                href="#contacto"
               >
-                Pedir información
+                Solicitar información
               </a>
             </div>
           ))}

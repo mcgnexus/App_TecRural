@@ -36,10 +36,11 @@ export default function LeadForm() {
 
     const next: Errors = {};
     if (form.name.trim().length < 2) next.name = 'Escribe tu nombre.';
-    if (!/^[+0-9\s().-]{6,20}$/.test(form.phone.trim()))
+    const phone = form.phone.trim();
+    const phoneDigits = phone.replace(/[^0-9]/g, '');
+    if (!/^[+0-9\s().-]{6,20}$/.test(phone) || phoneDigits.length < 9 || phoneDigits.length > 15)
       next.phone = 'Escribe un teléfono válido.';
     if (!form.municipality) next.municipality = 'Selecciona tu municipio.';
-    if (!form.crop) next.crop = 'Selecciona tu cultivo.';
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
@@ -110,6 +111,7 @@ export default function LeadForm() {
           onChange={set('phone')}
           placeholder="600 000 000"
           className={errors.phone ? 'invalid' : undefined}
+          aria-invalid={Boolean(errors.phone)}
         />
         {errors.phone && <div className="field-error">{errors.phone}</div>}
       </div>
@@ -145,6 +147,7 @@ export default function LeadForm() {
             onChange={set('municipality')}
             disabled={!zone}
             className={errors.municipality ? 'invalid' : undefined}
+            aria-invalid={Boolean(errors.municipality)}
           >
             <option value="">
               {zone ? 'Elige tu municipio…' : 'Primero elige tu zona'}
@@ -161,63 +164,71 @@ export default function LeadForm() {
         )}
       </div>
 
-      <div className="form-row">
-        <div className="field">
-          <label htmlFor="lead-crop">Cultivo principal</label>
-          <div className="select-wrap">
-            <select
-              id="lead-crop"
-              value={form.crop}
-              onChange={set('crop')}
-              className={errors.crop ? 'invalid' : undefined}
-            >
-              <option value="">Elige…</option>
-              {CROPS.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          {errors.crop && <div className="field-error">{errors.crop}</div>}
-        </div>
+      <details className="advanced-options">
+        <summary>
+          Más sobre tu finca <span>(opcional)</span>
+        </summary>
+        <div className="advanced-options-body">
+          <div className="form-row">
+            <div className="field">
+              <label htmlFor="lead-crop">Cultivo principal</label>
+              <div className="select-wrap">
+                <select
+                  id="lead-crop"
+                  value={form.crop}
+                  onChange={set('crop')}
+                  className={errors.crop ? 'invalid' : undefined}
+                  aria-invalid={Boolean(errors.crop)}
+                >
+                  <option value="">Elige…</option>
+                  {CROPS.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {errors.crop && <div className="field-error">{errors.crop}</div>}
+            </div>
 
-        <div className="field">
-          <label htmlFor="lead-size">Tamaño de la finca</label>
-          <div className="select-wrap">
-            <select
-              id="lead-size"
-              value={form.farmSize}
-              onChange={set('farmSize')}
-            >
-              <option value="">Opcional…</option>
-              {FARM_SIZES.map((f) => (
-                <option key={f.value} value={f.value}>
-                  {f.label}
-                </option>
-              ))}
-            </select>
+            <div className="field">
+              <label htmlFor="lead-size">Tamaño de la finca</label>
+              <div className="select-wrap">
+                <select
+                  id="lead-size"
+                  value={form.farmSize}
+                  onChange={set('farmSize')}
+                >
+                  <option value="">Opcional…</option>
+                  {FARM_SIZES.map((f) => (
+                    <option key={f.value} value={f.value}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="field">
+            <label htmlFor="lead-problem">Problema o interés principal</label>
+            <div className="select-wrap">
+              <select
+                id="lead-problem"
+                value={form.problem}
+                onChange={set('problem')}
+              >
+                <option value="">Selecciona uno…</option>
+                {PROBLEMS.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
-      </div>
-
-      <div className="field">
-        <label htmlFor="lead-problem">Problema o interés principal</label>
-        <div className="select-wrap">
-          <select
-            id="lead-problem"
-            value={form.problem}
-            onChange={set('problem')}
-          >
-            <option value="">Selecciona uno…</option>
-            {PROBLEMS.map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      </details>
 
       {/* Honeypot anti-spam: los humanos no ven este campo */}
       <div className="hp-field" aria-hidden="true">

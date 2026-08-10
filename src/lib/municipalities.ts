@@ -57,3 +57,34 @@ export function municipalitiesByZone(zone: ZoneId | ''): Municipality[] {
 export function findMunicipality(name: string): Municipality | undefined {
   return MUNICIPALITIES.find((m) => m.name === name);
 }
+
+const EARTH_RADIUS_KM = 6371;
+
+function distanceKm(aLat: number, aLon: number, bLat: number, bLon: number): number {
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const dLat = rad(bLat - aLat);
+  const dLon = rad(bLon - aLon);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(rad(aLat)) * Math.cos(rad(bLat)) * Math.sin(dLon / 2) ** 2;
+  return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+}
+
+/** Devuelve el municipio más cercano a una coordenada, o undefined si el más
+ *  cercano está a más de `maxKm` (por defecto 35 km). */
+export function findNearestMunicipality(
+  lat: number,
+  lon: number,
+  maxKm = 35
+): Municipality | undefined {
+  let best: Municipality | undefined;
+  let bestDist = Infinity;
+  for (const m of MUNICIPALITIES) {
+    const d = distanceKm(lat, lon, m.lat, m.lon);
+    if (d < bestDist) {
+      bestDist = d;
+      best = m;
+    }
+  }
+  return best && bestDist <= maxKm ? best : undefined;
+}

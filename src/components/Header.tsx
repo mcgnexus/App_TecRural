@@ -13,6 +13,9 @@ export default function Header() {
           </span>
         </a>
         <nav className="nav" aria-label="Principal">
+          <a className="nav-link" href="#consulta">
+            Consulta
+          </a>
           <a className="nav-link" href="#servicios">
             Servicios
           </a>

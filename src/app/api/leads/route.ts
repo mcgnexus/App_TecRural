@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     if (!findMunicipality(municipality)) {
       errors.municipality = 'Selecciona tu municipio de la lista.';
     }
-    if (!CROPS.some((c) => c.value === crop)) {
+    if (crop && !CROPS.some((c) => c.value === crop)) {
       errors.crop = 'Selecciona un cultivo.';
     }
     if (farmSize && !FARM_SIZES.some((f) => f.value === farmSize)) {

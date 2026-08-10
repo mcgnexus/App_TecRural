@@ -5,7 +5,7 @@ import type { WeatherData, WeatherSource } from '@/lib/weather';
 import { weatherCodeToLabel } from '@/lib/weather';
 import { computeRisks, getRecommendation } from '@/lib/recommendations';
 import type { RiskLevel } from '@/lib/weather';
-import { ZONES, municipalitiesByZone, findMunicipality } from '@/lib/municipalities';
+import { ZONES, municipalitiesByZone, findMunicipality, findNearestMunicipality } from '@/lib/municipalities';
 import { CROPS, CROP_STAGES, findCrop, type CropStageValue } from '@/lib/crops';
 import { computeIrrigation, formatLitros } from '@/lib/irrigation';
 import { computeAlarms, type AlarmKind } from '@/lib/alarms';
@@ -22,6 +22,7 @@ import {
   AlertShieldIcon,
   HailIcon,
   WhatsAppIcon,
+  PinIcon,
 } from './icons';
 
 type Status = 'idle' | 'loading' | 'ok' | 'error';
@@ -103,6 +104,9 @@ export default function WeatherWidget() {
   const [stage, setStage] = useState<'' | CropStageValue>('');
   const [stageTouched, setStageTouched] = useState(false);
   const [hectares, setHectares] = useState('1');
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [geoStatus, setGeoStatus] = useState<'idle' | 'locating' | 'ok' | 'error'>('idle');
+  const [geoMsg, setGeoMsg] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [error, setError] = useState('');
@@ -153,6 +157,8 @@ export default function WeatherWidget() {
     setStatus('idle');
     setStage('');
     setStageTouched(false);
+    setGeoStatus('idle');
+    setGeoMsg('');
   };
 
   const onMunicipalityChange = (value: string) => {
@@ -195,6 +201,43 @@ export default function WeatherWidget() {
       );
     }
   }, [municipality]);
+
+  const onGeo = useCallback(async () => {
+    if (!('geolocation' in navigator)) {
+      setGeoStatus('error');
+      setGeoMsg('Tu navegador no soporta la geolocalización.');
+      return;
+    }
+    setGeoStatus('locating');
+    setGeoMsg('');
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          timeout: 10000,
+          maximumAge: 60000,
+        });
+      });
+      const place = findNearestMunicipality(
+        pos.coords.latitude,
+        pos.coords.longitude
+      );
+      if (!place) {
+        setGeoStatus('error');
+        setGeoMsg('Tu ubicación no está en las zonas de trabajo (Altiplano o Costa Tropical).');
+        return;
+      }
+      setZone(place.zone);
+      setMunicipality(place.name);
+      setWeather(null);
+      setStatus('idle');
+      setGeoStatus('ok');
+      setGeoMsg(`Te hemos asignado ${place.name}.`);
+      consult();
+    } catch {
+      setGeoStatus('error');
+      setGeoMsg('No hemos podido obtener tu ubicación. Elígelo a mano.');
+    }
+  }, [consult]);
 
   const risks = useMemo(
     () => (weather ? computeRisks(weather) : null),
@@ -265,7 +308,18 @@ export default function WeatherWidget() {
     <div id="consulta">
       <div className="card selector-card">
         <div className="field">
-          <label htmlFor="zone">Tu zona</label>
+          <div className="field-label-row">
+            <label htmlFor="zone">Tu zona</label>
+            <button
+              type="button"
+              className="btn-geo"
+              onClick={onGeo}
+              disabled={geoStatus === 'locating'}
+            >
+              <PinIcon width={14} height={14} />
+              {geoStatus === 'locating' ? 'Localizando…' : 'Usar mi ubicación'}
+            </button>
+          </div>
           <div className="select-wrap">
             <select
               id="zone"
@@ -280,6 +334,8 @@ export default function WeatherWidget() {
               ))}
             </select>
           </div>
+          {geoStatus === 'ok' && <p className="geo-ok">{geoMsg}</p>}
+          {geoStatus === 'error' && <p className="geo-error">{geoMsg}</p>}
         </div>
 
         <div className="field">
@@ -303,91 +359,100 @@ export default function WeatherWidget() {
           </div>
         </div>
 
-        <div className="field">
-          <label htmlFor="crop">Tu cultivo</label>
-          <div className="select-wrap">
-            <select
-              id="crop"
-              value={cropValue}
-              onChange={(e) => {
-                setCropValue(e.target.value);
-                setStage('');
-                setStageTouched(false);
-              }}
-            >
-              <option value="">Elige tu cultivo…</option>
-              {CROPS.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <p className="hint">
-            La recomendación se ajusta al tipo de cultivo y al clima local de tu
-            municipio.
-          </p>
-        </div>
-
-        <div className="field">
-          <label htmlFor="stage">Etapa del cultivo</label>
-          <div className="select-wrap">
-            <select
-              id="stage"
-              value={stage}
-              onChange={(e) => {
-                setStage(e.target.value as typeof stage);
-                setStageTouched(true);
-              }}
-              disabled={!cropValue}
-            >
-              <option value="">
-                {cropValue ? 'Elige la etapa…' : 'Primero elige tu cultivo'}
-              </option>
-              {CROP_STAGES.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <p className="hint">
-            {CROP_STAGES.find((s) => s.value === stage)?.hint ??
-              'Según la etapa, la planta gasta más o menos agua.'}
-          </p>
-          {deduced && (
-            <div className="pheno-suggest">
-              <span className="pheno-badge">Auto</span>
-              <span>
-                <strong>
-                  Fase probable el {formatDateLong(today)}:{' '}
-                  {deduced.main.label}
-                </strong>{' '}
-                ({deduced.confidence}% de probabilidad).
-                {stageTouched &&
-                  stage !== deduced.kcStage &&
-                  ' Has elegido otra etapa manualmente.'}
-              </span>
-              <span className="pheno-reason">{deduced.reason}</span>
+        <details
+          className="advanced-options"
+          open={advancedOpen}
+          onToggle={(e) => setAdvancedOpen(e.currentTarget.open)}
+        >
+          <summary>Personalizar el cálculo de riego <span>(opcional)</span></summary>
+          <div className="advanced-options-body">
+            <div className="field">
+              <label htmlFor="crop">Tu cultivo</label>
+              <div className="select-wrap">
+                <select
+                  id="crop"
+                  value={cropValue}
+                  onChange={(e) => {
+                    setCropValue(e.target.value);
+                    setStage('');
+                    setStageTouched(false);
+                    if (e.target.value) setAdvancedOpen(true);
+                  }}
+                >
+                  <option value="">Elige tu cultivo…</option>
+                  {CROPS.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p className="hint">
+                Añádelo para recibir una recomendación de riego más ajustada.
+              </p>
             </div>
-          )}
-        </div>
 
-        <div className="field">
-          <label htmlFor="hectares">Hectáreas regadas</label>
-          <input
-            id="hectares"
-            type="number"
-            inputMode="decimal"
-            min="0.1"
-            step="0.5"
-            value={hectares}
-            onChange={(e) => setHectares(e.target.value)}
-          />
-          <p className="hint">
-            Se usa para calcular los litros totales de tu finca.
-          </p>
-        </div>
+            <div className="field">
+              <label htmlFor="stage">Etapa del cultivo</label>
+              <div className="select-wrap">
+                <select
+                  id="stage"
+                  value={stage}
+                  onChange={(e) => {
+                    setStage(e.target.value as typeof stage);
+                    setStageTouched(true);
+                  }}
+                  disabled={!cropValue}
+                >
+                  <option value="">
+                    {cropValue ? 'Elige la etapa…' : 'Primero elige tu cultivo'}
+                  </option>
+                  {CROP_STAGES.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p className="hint">
+                {CROP_STAGES.find((s) => s.value === stage)?.hint ??
+                  'Según la etapa, la planta gasta más o menos agua.'}
+              </p>
+              {deduced && (
+                <div className="pheno-suggest">
+                  <span className="pheno-badge">Auto</span>
+                  <span>
+                    <strong>
+                      Fase probable el {formatDateLong(today)}:{' '}
+                      {deduced.main.label}
+                    </strong>{' '}
+                    ({deduced.confidence}% de probabilidad).
+                    {stageTouched &&
+                      stage !== deduced.kcStage &&
+                      ' Has elegido otra etapa manualmente.'}
+                  </span>
+                  <span className="pheno-reason">{deduced.reason}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="field">
+              <label htmlFor="hectares">Hectáreas regadas</label>
+              <input
+                id="hectares"
+                type="number"
+                inputMode="decimal"
+                min="0.1"
+                step="0.5"
+                value={hectares}
+                onChange={(e) => setHectares(e.target.value)}
+              />
+              <p className="hint">
+                Se usa para calcular los litros totales de tu finca.
+              </p>
+            </div>
+          </div>
+        </details>
 
         <button
           className="btn btn-primary btn-block btn-lg"
@@ -400,10 +465,30 @@ export default function WeatherWidget() {
       </div>
 
       {status === 'loading' && (
-        <div className="status" role="status">
-          <span className="spinner" aria-hidden="true" />
-          Obteniendo el tiempo de tu zona…
-        </div>
+        <>
+          <div className="status" role="status">
+            <span className="spinner" aria-hidden="true" />
+            Obteniendo el tiempo de tu zona…
+          </div>
+          <div className="skeleton-card" aria-hidden="true">
+            <div className="skeleton-head">
+              <div className="skeleton skeleton-title" />
+              <div className="skeleton skeleton-chip" />
+            </div>
+            <div className="skeleton-main">
+              <div className="skeleton skeleton-big" />
+              <div className="skeleton skeleton-small" />
+              <div className="skeleton skeleton-small" />
+            </div>
+            <div className="skeleton-cols">
+              <div className="skeleton skeleton-block" />
+              <div className="skeleton skeleton-block" />
+            </div>
+            <div className="skeleton skeleton-reco" />
+            <div className="skeleton skeleton-line" />
+            <div className="skeleton skeleton-line short" style={{ marginTop: 8 }} />
+          </div>
+        </>
       )}
 
       {status === 'error' && (
@@ -524,6 +609,12 @@ export default function WeatherWidget() {
             </div>
           </div>
 
+          <div className={`reco ${reco.level}`}>
+            <div className="reco-title">{reco.title}</div>
+            <p className="reco-message">{reco.message}</p>
+            <div className="reco-advice">{reco.advice}</div>
+          </div>
+
           {activeAlerts.length > 0 && (
             <div className="alarm-banner" role="alert">
               <LightningIcon width={20} height={20} />
@@ -641,12 +732,6 @@ export default function WeatherWidget() {
               ))}
             </div>
           )}
-
-          <div className={`reco ${reco.level}`}>
-            <div className="reco-title">{reco.title}</div>
-            <p className="reco-message">{reco.message}</p>
-            <div className="reco-advice">{reco.advice}</div>
-          </div>
 
           <h3 style={{ color: 'var(--green-dark)', marginTop: 22 }}>
             Riego: agua y mejores horas
