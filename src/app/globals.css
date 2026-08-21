@@ -975,6 +975,23 @@ textarea {
   }
 }
 
+/* ---------- Municipios ---------- */
+.municipality-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.municipality-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 0.92rem;
+  text-align: center;
+}
+
 /* ---------- Servicios ---------- */
 .plans {
   display: grid;
@@ -1084,6 +1101,29 @@ textarea {
 .service p {
   font-size: 0.88rem;
   color: var(--muted);
+}
+
+.service-gated {
+  border-color: var(--amber);
+  background: var(--amber-bg);
+}
+
+.service-gated .service-icon {
+  background: var(--amber-bg);
+  color: var(--amber);
+}
+
+.gated-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--amber);
+  background: #fff3e0;
+  border: 1px solid #f0c2a0;
+  border-radius: 6px;
+  padding: 2px 7px;
+  margin-left: 8px;
+  vertical-align: middle;
 }
 
 /* ---------- Formulario ---------- */
@@ -1361,6 +1401,49 @@ textarea {
 
 .admin-toolbar .spacer {
   flex: 1;
+}
+
+/* ---------- Lead response status ---------- */
+.status-ok {
+  color: var(--green-ok);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.status-pending {
+  color: var(--red);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.status-new {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.row-pending {
+  background: var(--red-bg);
+}
+
+.pending-badge {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.btn-respond {
+  background: transparent;
+  color: var(--green-ok);
+  border: 1.5px solid #b8d8b8;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-right: 6px;
+  cursor: pointer;
+}
+
+.btn-respond:hover {
+  background: var(--green-ok-bg);
 }
 
 /* ---------- Alarmas ---------- */

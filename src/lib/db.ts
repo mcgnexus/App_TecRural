@@ -50,7 +50,8 @@ function ensureNeonSchema(): Promise<void> {
           crop TEXT NOT NULL,
           farm_size TEXT,
           problem TEXT,
-          created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          responded_at TIMESTAMPTZ
         );
         CREATE TABLE IF NOT EXISTS alert_logs (
           id SERIAL PRIMARY KEY,
@@ -112,7 +113,8 @@ async function listLeadsNeon(): Promise<Lead[]> {
     `SELECT id, name, phone, municipality, crop,
             COALESCE(farm_size, '') AS farm_size,
             COALESCE(problem, '') AS problem,
-            created_at
+            created_at,
+            responded_at
      FROM leads
      ORDER BY id DESC`
   );
@@ -125,10 +127,12 @@ async function listLeadsNeon(): Promise<Lead[]> {
     farm_size: string;
     problem: string;
     created_at: Date;
+    responded_at: Date | null;
   }>).map((r) => ({
     ...r,
     id: Number(r.id),
     created_at: fmtDate(r.created_at),
+    responded_at: r.responded_at ? fmtDate(r.responded_at) : null,
   }));
 }
 
@@ -141,6 +145,15 @@ async function countLeadsNeon(): Promise<number> {
 async function deleteLeadNeon(id: number): Promise<boolean> {
   await ensureNeonSchema();
   const { rowCount } = await neon().query('DELETE FROM leads WHERE id = $1', [id]);
+  return (rowCount ?? 0) > 0;
+}
+
+async function markRespondedNeon(id: number): Promise<boolean> {
+  await ensureNeonSchema();
+  const { rowCount } = await neon().query(
+    'UPDATE leads SET responded_at = now() WHERE id = $1 AND responded_at IS NULL',
+    [id]
+  );
   return (rowCount ?? 0) > 0;
 }
 
@@ -193,7 +206,8 @@ function sqlite(): Database.Database {
         crop TEXT NOT NULL,
         farm_size TEXT,
         problem TEXT,
-        created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+        created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+        responded_at TEXT
       );
       CREATE TABLE IF NOT EXISTS alert_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -232,7 +246,7 @@ function createLeadSqlite(input: LeadInput) {
 function listLeadsSqlite(): Lead[] {
   return sqlite()
     .prepare(
-      `SELECT id, name, phone, municipality, crop, farm_size, problem, created_at
+      `SELECT id, name, phone, municipality, crop, farm_size, problem, created_at, responded_at
        FROM leads
        ORDER BY id DESC`
     )
@@ -248,6 +262,12 @@ function countLeadsSqlite(): number {
 
 function deleteLeadSqlite(id: number): boolean {
   return sqlite().prepare('DELETE FROM leads WHERE id = ?').run(id).changes > 0;
+}
+
+function markRespondedSqlite(id: number): boolean {
+  return sqlite()
+    .prepare('UPDATE leads SET responded_at = datetime(\'now\', \'localtime\') WHERE id = ? AND responded_at IS NULL')
+    .run(id).changes > 0;
 }
 
 function alreadyAlertedSqlite(phone: string, kind: string, day: string): boolean {
@@ -295,6 +315,10 @@ export function countLeads(): Promise<number> {
 
 export function deleteLead(id: number): Promise<boolean> {
   return USE_NEON ? deleteLeadNeon(id) : Promise.resolve(deleteLeadSqlite(id));
+}
+
+export function markResponded(id: number): Promise<boolean> {
+  return USE_NEON ? markRespondedNeon(id) : Promise.resolve(markRespondedSqlite(id));
 }
 
 /** ¿Ya se avisó de este tipo de alarma a este teléfono hoy? (evita duplicados). */

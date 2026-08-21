@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
-import { businessName } from '@/lib/wa';
+import { businessName, whatsappNumber } from '@/lib/wa';
 import ConsentBanner from '@/components/ConsentBanner';
 import Analytics from '@/components/Analytics';
 import './globals.css';
@@ -69,6 +69,49 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'LocalBusiness',
+              name: businessName(),
+              description:
+                'Información local de clima y riego orientativo para fincas del Altiplano y la Costa Tropical de Granada.',
+              url: SITE_URL,
+              telephone: process.env.BUSINESS_PHONE || '',
+              email: process.env.BUSINESS_EMAIL || '',
+              address: {
+                '@type': 'PostalAddress',
+                addressLocality: 'Granada',
+                addressRegion: 'Granada',
+                addressCountry: 'ES',
+              },
+              geo: {
+                '@type': 'GeoCoordinates',
+                latitude: 37.18,
+                longitude: -3.6,
+              },
+              areaServed: [
+                {
+                  '@type': 'Place',
+                  name: 'Altiplano de Granada',
+                },
+                {
+                  '@type': 'Place',
+                  name: 'Costa Tropical de Granada',
+                },
+              ],
+              priceRange: '€€',
+              openingHoursSpecification: {
+                '@type': 'OpeningHoursSpecification',
+                dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+                opens: '09:00',
+                closes: '18:00',
+              },
+            }),
+          }}
+        />
         {GA_MEASUREMENT_ID && (
           <Analytics measurementId={GA_MEASUREMENT_ID} />
         )}

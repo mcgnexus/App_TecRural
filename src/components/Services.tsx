@@ -52,31 +52,37 @@ const SERVICES = [
     icon: BellIcon,
     title: 'Avisos agrícolas por WhatsApp',
     text: 'Alertas sencillas de heladas, calor extremo, viento fuerte o lluvia, directamente al móvil.',
+    gated: false,
   },
   {
     icon: SensorIcon,
     title: 'Sensores de humedad del suelo',
     text: 'Mide la humedad en la zona de raíces y evita regar de más o de menos.',
+    gated: false,
   },
   {
     icon: StationIcon,
     title: 'Estación meteorológica local',
     text: 'Datos reales de tu finca: temperatura, humedad, lluvia y viento.',
+    gated: false,
   },
   {
     icon: DropletIcon,
     title: 'Recomendaciones de riego',
     text: 'Orientación basada en el clima y el estado de la parcela para ayudar a decidir.',
+    gated: false,
   },
   {
     icon: CameraIcon,
     title: 'Diagnóstico de plantas por imagen',
     text: 'Fotografía el problema y te orientamos sobre posibles plagas o carencias.',
+    gated: true,
   },
   {
     icon: ReportIcon,
     title: 'Informes agroclimáticos',
     text: 'Resúmenes del tiempo y del agua para entender mejor lo que pasa en tu finca.',
+    gated: true,
   },
 ];
 
@@ -126,13 +132,26 @@ export default function Services() {
 
         <div className="services-list">
           {SERVICES.map((s) => (
-            <div className="service" key={s.title}>
+            <div className={`service${s.gated ? ' service-gated' : ''}`} key={s.title}>
               <div className="service-icon">
                 <s.icon width={20} height={20} />
               </div>
               <div>
-                <h4>{s.title}</h4>
+                <h4>
+                  {s.title}
+                  {s.gated && <span className="gated-badge">🔒 Solo con contacto</span>}
+                </h4>
                 <p>{s.text}</p>
+                {s.gated && (
+                  <a
+                    className="btn btn-wa btn-small"
+                    href={waLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <WhatsAppIcon /> Desbloquear por WhatsApp
+                  </a>
+                )}
               </div>
             </div>
           ))}

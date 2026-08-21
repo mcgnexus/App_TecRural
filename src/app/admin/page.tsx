@@ -20,6 +20,7 @@ function toCsv(leads: Lead[]): string {
     'tamano_finca',
     'problema',
     'fecha',
+    'respondido',
   ];
   const rows = leads.map((l) =>
     [
@@ -31,9 +32,15 @@ function toCsv(leads: Lead[]): string {
       labelOf(FARM_SIZES, l.farm_size),
       labelOf(PROBLEMS, l.problem),
       l.created_at,
+      l.responded_at || '',
     ].join(',')
   );
   return [header.join(','), ...rows].join('\n');
+}
+
+function hoursSince(dateStr: string): number {
+  const d = new Date(dateStr.replace(' ', 'T') + 'Z');
+  return (Date.now() - d.getTime()) / (1000 * 60 * 60);
 }
 
 export default function AdminPage() {
@@ -118,6 +125,19 @@ export default function AdminPage() {
     }
   };
 
+  const onMarkResponded = async (id: number) => {
+    const res = await fetch(`/api/admin/leads/${id}`, { method: 'PATCH' });
+    if (res.ok) {
+      setLeads((l) =>
+        l.map((x) =>
+          x.id === id ? { ...x, responded_at: new Date().toISOString().replace('T', ' ').slice(0, 19) } : x
+        )
+      );
+    } else {
+      window.alert('No se pudo marcar como respondido.');
+    }
+  };
+
   const onExport = () => {
     const blob = new Blob([toCsv(leads)], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -127,6 +147,8 @@ export default function AdminPage() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  const pendingCount = leads.filter((l) => !l.responded_at && hoursSince(l.created_at) > 24).length;
 
   if (auth === 'loading') {
     return (
@@ -174,6 +196,9 @@ export default function AdminPage() {
           <p className="admin-sub">
             {total} contacto{total === 1 ? '' : 's'} guardado
             {total === 1 ? '' : 's'} en la base de datos.
+            {pendingCount > 0 && (
+              <span className="pending-badge"> {pendingCount} sin responder (&gt;24h)</span>
+            )}
           </p>
         </div>
         <div className="spacer" />
@@ -208,32 +233,54 @@ export default function AdminPage() {
                 <th>Cultivo</th>
                 <th>Finca</th>
                 <th>Problema</th>
+                <th>Estado</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {leads.map((l) => (
-                <tr key={l.id}>
-                  <td className="mono">{l.created_at}</td>
-                  <td>{l.name}</td>
-                  <td className="mono">{l.phone}</td>
-                  <td>{l.municipality}</td>
-                  <td>
-                    <span className="tag">{labelOf(CROPS, l.crop)}</span>
-                  </td>
-                  <td>{labelOf(FARM_SIZES, l.farm_size)}</td>
-                  <td>{labelOf(PROBLEMS, l.problem)}</td>
-                  <td>
-                    <button
-                      className="btn-danger-small"
-                      onClick={() => onDelete(l.id)}
-                      aria-label={`Eliminar contacto de ${l.name}`}
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {leads.map((l) => {
+                const isPending = !l.responded_at && hoursSince(l.created_at) > 24;
+                return (
+                  <tr key={l.id} className={isPending ? 'row-pending' : undefined}>
+                    <td className="mono">{l.created_at}</td>
+                    <td>{l.name}</td>
+                    <td className="mono">{l.phone}</td>
+                    <td>{l.municipality}</td>
+                    <td>
+                      <span className="tag">{labelOf(CROPS, l.crop)}</span>
+                    </td>
+                    <td>{labelOf(FARM_SIZES, l.farm_size)}</td>
+                    <td>{labelOf(PROBLEMS, l.problem)}</td>
+                    <td>
+                      {l.responded_at ? (
+                        <span className="status-ok">Respondido</span>
+                      ) : isPending ? (
+                        <span className="status-pending">Pendiente (&gt;24h)</span>
+                      ) : (
+                        <span className="status-new">Nuevo</span>
+                      )}
+                    </td>
+                    <td>
+                      {!l.responded_at && (
+                        <button
+                          className="btn-respond"
+                          onClick={() => onMarkResponded(l.id)}
+                          aria-label={`Marcar como respondido a ${l.name}`}
+                        >
+                          ✓
+                        </button>
+                      )}
+                      <button
+                        className="btn-danger-small"
+                        onClick={() => onDelete(l.id)}
+                        aria-label={`Eliminar contacto de ${l.name}`}
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

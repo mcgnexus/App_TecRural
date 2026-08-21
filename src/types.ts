@@ -7,6 +7,7 @@ export interface Lead {
   farm_size: string;
   problem: string;
   created_at: string;
+  responded_at: string | null;
 }
 
 export interface LeadInput {
