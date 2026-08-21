@@ -125,8 +125,10 @@ export default function CoverageMap({
         }
       });
 
-      marker.addTo(mapRef.current);
-      markersRef.current.push(marker);
+      if (mapRef.current) {
+        marker.addTo(mapRef.current);
+        markersRef.current.push(marker);
+      }
     });
   }, [selectedZone, selectedMunicipality, isInitialized, onMunicipalitySelect, onZoneSelect]);
 
