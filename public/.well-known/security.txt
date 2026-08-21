@@ -1,0 +1,3 @@
+Contact: mailto:hola@tecrural.es
+Policy: https://tecrural.es/politica-privacidad
+Preferred-Languages: es

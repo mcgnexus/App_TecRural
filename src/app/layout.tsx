@@ -44,6 +44,14 @@ export const metadata: Metadata = {
     title: `${businessName()} — Clima y riego orientativo para tu finca`,
     description:
       'Consulta el tiempo local, revisa riesgos y recibe recomendaciones sencillas para cuidar mejor tu cultivo.',
+    images: [
+      {
+        url: '/icons/icon-512.png',
+        width: 512,
+        height: 512,
+        alt: businessName(),
+      },
+    ],
   },
 };
 

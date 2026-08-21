@@ -10,22 +10,25 @@ function isValidPhone(phone: string): boolean {
   return digits.length >= 9 && digits.length <= 15 && PHONE_RE.test(phone);
 }
 
-/** Límite sencillo en memoria para evitar abuso del formulario (10/h por IP). */
+/** Límite sencillo en memoria para evitar abuso del formulario (20/h por IP). */
 const rateHits = new Map<string, { count: number; resetAt: number }>();
 
-function checkRateLimit(ip: string): boolean {
+function checkRateLimit(
+  ip: string
+): { ok: boolean; retryAfter?: number } {
   const now = Date.now();
   const hit = rateHits.get(ip);
   if (!hit || hit.resetAt < now) {
     rateHits.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 });
-    return true;
+    return { ok: true };
   }
   hit.count += 1;
-  if (hit.count > 10) {
+  if (hit.count > 20) {
+    const retryAfter = Math.ceil((hit.resetAt - now) / 1000);
     rateHits.delete(ip);
-    return false;
+    return { ok: false, retryAfter };
   }
-  return true;
+  return { ok: true };
 }
 
 function clientIp(request: Request): string {
@@ -38,10 +41,11 @@ function clientIp(request: Request): string {
 
 export async function POST(request: Request) {
   try {
-    if (!checkRateLimit(clientIp(request))) {
+    const rateCheck = checkRateLimit(clientIp(request));
+    if (!rateCheck.ok) {
       return NextResponse.json(
         { error: 'Demasiadas solicitudes. Inténtalo más tarde.' },
-        { status: 429 }
+        { status: 429, headers: { 'Retry-After': String(rateCheck.retryAfter ?? 60) } }
       );
     }
 
