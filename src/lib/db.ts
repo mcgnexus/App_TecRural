@@ -62,6 +62,7 @@ function ensureNeonSchema(): Promise<void> {
         );
         CREATE INDEX IF NOT EXISTS idx_alert_logs_phone_day
           ON alert_logs (phone, day);
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_phone ON leads (phone);
       `)
       .then(() => undefined)
       .catch((err) => {
@@ -83,8 +84,14 @@ function fmtDate(d: Date): string {
 async function createLeadNeon(input: LeadInput) {
   await ensureNeonSchema();
   const { rows } = await neon().query(
-    `INSERT INTO leads (name, phone, municipality, crop, farm_size, problem)
+      `INSERT INTO leads (name, phone, municipality, crop, farm_size, problem)
      VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (phone) DO UPDATE SET
+       name = EXCLUDED.name,
+       municipality = EXCLUDED.municipality,
+       crop = EXCLUDED.crop,
+       farm_size = EXCLUDED.farm_size,
+       problem = EXCLUDED.problem
      RETURNING id, created_at`,
     [
       input.name,
@@ -197,6 +204,7 @@ function sqlite(): Database.Database {
         sent_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
       );
       CREATE INDEX IF NOT EXISTS idx_alert_logs_phone_day ON alert_logs (phone, day);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_phone ON leads (phone);
     `);
     sqliteDb = db;
   }
@@ -207,12 +215,18 @@ function createLeadSqlite(input: LeadInput) {
   const info = sqlite()
     .prepare(
       `INSERT INTO leads (name, phone, municipality, crop, farm_size, problem)
-       VALUES (@name, @phone, @municipality, @crop, @farmSize, @problem)`
+       VALUES (@name, @phone, @municipality, @crop, @farmSize, @problem)
+       ON CONFLICT (phone) DO UPDATE SET
+         name = EXCLUDED.name,
+         municipality = EXCLUDED.municipality,
+         crop = EXCLUDED.crop,
+         farm_size = EXCLUDED.farm_size,
+         problem = EXCLUDED.problem`
     )
     .run(input);
   return sqlite()
-    .prepare(`SELECT id, created_at FROM leads WHERE id = ?`)
-    .get(info.lastInsertRowid) as { id: number; created_at: string };
+    .prepare(`SELECT id, created_at FROM leads WHERE phone = ?`)
+    .get(input.phone) as { id: number; created_at: string };
 }
 
 function listLeadsSqlite(): Lead[] {
