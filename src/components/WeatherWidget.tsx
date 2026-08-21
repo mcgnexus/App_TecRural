@@ -11,6 +11,7 @@ import { computeIrrigation, formatLitros } from '@/lib/irrigation';
 import { computeAlarms, type AlarmKind } from '@/lib/alarms';
 import { currentPhenology, formatDateLong } from '@/lib/phenology';
 import { buildWhatsAppLink, businessName } from '@/lib/wa';
+import LocationSelector from './LocationSelector';
 import {
   SunIcon,
   DropletIcon,
@@ -22,7 +23,6 @@ import {
   AlertShieldIcon,
   HailIcon,
   WhatsAppIcon,
-  PinIcon,
 } from './icons';
 
 type Status = 'idle' | 'loading' | 'ok' | 'error';
@@ -307,57 +307,16 @@ export default function WeatherWidget() {
   return (
     <div id="consulta">
       <div className="card selector-card">
-        <div className="field">
-          <div className="field-label-row">
-            <label htmlFor="zone">Tu zona</label>
-            <button
-              type="button"
-              className="btn-geo"
-              onClick={onGeo}
-              disabled={geoStatus === 'locating'}
-            >
-              <PinIcon width={14} height={14} />
-              {geoStatus === 'locating' ? 'Localizando…' : 'Usar mi ubicación'}
-            </button>
-          </div>
-          <div className="select-wrap">
-            <select
-              id="zone"
-              value={zone}
-              onChange={(e) => onZoneChange(e.target.value)}
-            >
-              <option value="">Elige tu zona…</option>
-              {ZONES.map((z) => (
-                <option key={z.id} value={z.id}>
-                  {z.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          {geoStatus === 'ok' && <p className="geo-ok">{geoMsg}</p>}
-          {geoStatus === 'error' && <p className="geo-error">{geoMsg}</p>}
-        </div>
-
-        <div className="field">
-          <label htmlFor="municipality">Tu municipio</label>
-          <div className="select-wrap">
-            <select
-              id="municipality"
-              value={municipality}
-              onChange={(e) => onMunicipalityChange(e.target.value)}
-              disabled={!zone}
-            >
-              <option value="">
-                {zone ? 'Elige tu municipio…' : 'Primero elige tu zona'}
-              </option>
-              {municipalities.map((m) => (
-                <option key={m.name} value={m.name}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <LocationSelector
+          selectedZone={zone}
+          selectedMunicipality={municipality}
+          onZoneChange={onZoneChange}
+          onMunicipalityChange={onMunicipalityChange}
+          geoStatus={geoStatus}
+          geoMsg={geoMsg}
+          onGeo={onGeo}
+          municipalities={municipalities}
+        />
 
         <details
           className="advanced-options"

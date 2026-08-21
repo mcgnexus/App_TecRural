@@ -2,6 +2,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import WeatherWidget from '@/components/WeatherWidget';
 import Services from '@/components/Services';
+import FAQ from '@/components/FAQ';
 import nextDynamic from 'next/dynamic';
 import { WhatsAppIcon } from '@/components/icons';
 import {
@@ -56,6 +57,8 @@ export default function HomePage() {
         </section>
 
         <Services />
+
+        <FAQ />
 
         <section id="contacto" className="section">
           <div className="container">

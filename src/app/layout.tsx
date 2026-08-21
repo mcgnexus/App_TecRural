@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 import { businessName } from '@/lib/wa';
+import ConsentBanner from '@/components/ConsentBanner';
+import Analytics from '@/components/Analytics';
 import './globals.css';
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -57,6 +60,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
+      <head>
+        {GA_MEASUREMENT_ID && (
+          <Analytics measurementId={GA_MEASUREMENT_ID} />
+        )}
+      </head>
       <body>
         {children}
         <Script id="register-sw" strategy="afterInteractive">
@@ -68,6 +76,16 @@ export default function RootLayout({
             }
           `}
         </Script>
+        {GA_MEASUREMENT_ID && (
+          <ConsentBanner
+            onAccept={() => {
+              console.log('Analytics consent accepted');
+            }}
+            onReject={() => {
+              console.log('Analytics consent rejected');
+            }}
+          />
+        )}
       </body>
     </html>
   );
