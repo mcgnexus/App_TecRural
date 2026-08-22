@@ -63,6 +63,10 @@ function ensureNeonSchema(): Promise<void> {
         );
         CREATE INDEX IF NOT EXISTS idx_alert_logs_phone_day
           ON alert_logs (phone, day);
+        DELETE FROM leads a
+        USING leads b
+        WHERE a.phone = b.phone
+          AND a.id < b.id;
         CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_phone ON leads (phone);
       `)
       .then(() => undefined)
@@ -218,6 +222,12 @@ function sqlite(): Database.Database {
         sent_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
       );
       CREATE INDEX IF NOT EXISTS idx_alert_logs_phone_day ON alert_logs (phone, day);
+      DELETE FROM leads
+      WHERE id NOT IN (
+        SELECT MAX(id)
+        FROM leads
+        GROUP BY phone
+      );
       CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_phone ON leads (phone);
     `);
     sqliteDb = db;
