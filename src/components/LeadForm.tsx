@@ -29,6 +29,7 @@ export default function LeadForm() {
   const [done, setDone] = useState(false);
   const [serverError, setServerError] = useState('');
   const [cameFromConsult, setCameFromConsult] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
 
   const applyConsultLocation = useCallback((location: ConsultLocation) => {
     setZone(location.zone);
@@ -78,6 +79,7 @@ export default function LeadForm() {
     if (!/^[+0-9\s().-]{6,20}$/.test(phone) || phoneDigits.length < 9 || phoneDigits.length > 15)
       next.phone = 'Escribe un teléfono válido.';
     if (!form.municipality) next.municipality = 'Selecciona tu municipio.';
+    if (!privacyAccepted) next.privacy = 'Debes aceptar la política de privacidad.';
     setErrors(next);
     if (Object.keys(next).length > 0) {
       trackEvent('lead_submit_error', {
@@ -93,7 +95,7 @@ export default function LeadForm() {
       const res = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, website }),
+        body: JSON.stringify({ ...form, website, privacyAccepted }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
@@ -155,6 +157,7 @@ export default function LeadForm() {
   const phoneField = (
     <div className="field">
       <label htmlFor="lead-phone">Teléfono WhatsApp</label>
+      <span className="field-hint">Solo WhatsApp. No llamadas comerciales.</span>
       <input
         id="lead-phone"
         type="tel"
@@ -324,6 +327,29 @@ export default function LeadForm() {
       </div>
 
       {serverError && <div className="error-box">{serverError}</div>}
+
+      <div className="privacy-consent">
+        <label htmlFor="lead-privacy">
+          <input
+            id="lead-privacy"
+            type="checkbox"
+            checked={privacyAccepted}
+            onChange={(e) => {
+              setPrivacyAccepted(e.target.checked);
+              setErrors((er) => ({ ...er, privacy: '' }));
+            }}
+            aria-invalid={Boolean(errors.privacy)}
+          />
+          <span>
+            Acepto la{' '}
+            <a href="/politica-privacidad" target="_blank" rel="noreferrer">
+              política de privacidad
+            </a>
+            .
+          </span>
+        </label>
+        {errors.privacy && <div className="field-error">{errors.privacy}</div>}
+      </div>
 
       <div className="form-actions">
         <button

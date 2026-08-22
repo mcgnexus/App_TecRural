@@ -4,8 +4,7 @@ import Footer from '@/components/Footer';
 import LeadForm from '@/components/LeadForm';
 import { businessName } from '@/lib/wa';
 import { MUNICIPALITIES } from '@/lib/municipalities';
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tecrural.es';
+import { SITE_URL } from '@/lib/site';
 const altiplano = MUNICIPALITIES.filter((m) => m.zone === 'altiplano');
 
 export const metadata: Metadata = {
@@ -17,7 +16,7 @@ export const metadata: Metadata = {
     description:
       'Consulta el tiempo local y recibe recomendaciones de riego para tu finca en el Altiplano de Granada.',
     url: `${SITE_URL}/altiplano`,
-    images: [{ url: '/icons/icon-512.png', width: 512, height: 512 }],
+    images: [{ url: '/brand-square.png', width: 512, height: 512, alt: businessName() }],
   },
   alternates: { canonical: `${SITE_URL}/altiplano` },
 };

@@ -3,10 +3,9 @@ import Script from 'next/script';
 import { businessName, whatsappNumber } from '@/lib/wa';
 import ConsentBanner from '@/components/ConsentBanner';
 import Analytics from '@/components/Analytics';
+import { SITE_URL } from '@/lib/site';
 import './globals.css';
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || 'https://tecrural.es';
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 export const metadata: Metadata = {
@@ -18,6 +17,7 @@ export const metadata: Metadata = {
   description:
     'Información local de clima y riego orientativo para fincas del Altiplano y la Costa Tropical de Granada. Avisos agrícolas, sensores y recomendaciones sencillas.',
   applicationName: businessName(),
+  alternates: { canonical: SITE_URL },
   keywords: [
     'riego',
     'clima',
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
   icons: {
     icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/brand-square.png', sizes: '512x512', type: 'image/png' },
       { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
     ],
     apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180' }],
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
       'Consulta el tiempo local, revisa riesgos y recibe recomendaciones sencillas para cuidar mejor tu cultivo.',
     images: [
       {
-        url: '/icons/icon-512.png',
+         url: '/brand-square.png',
         width: 512,
         height: 512,
         alt: businessName(),

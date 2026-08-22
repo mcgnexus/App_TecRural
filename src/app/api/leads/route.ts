@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createLead } from '@/lib/db';
 import { findMunicipality } from '@/lib/municipalities';
 import { CROPS, FARM_SIZES, PROBLEMS } from '@/lib/crops';
+import { checkRateLimit, clientIp } from '@/lib/rate-limit';
 
 const PHONE_RE = /^\+?[0-9\s().-]{6,20}$/;
 
@@ -10,38 +11,13 @@ function isValidPhone(phone: string): boolean {
   return digits.length >= 9 && digits.length <= 15 && PHONE_RE.test(phone);
 }
 
-/** Límite sencillo en memoria para evitar abuso del formulario (20/h por IP). */
-const rateHits = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(
-  ip: string
-): { ok: boolean; retryAfter?: number } {
-  const now = Date.now();
-  const hit = rateHits.get(ip);
-  if (!hit || hit.resetAt < now) {
-    rateHits.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 });
-    return { ok: true };
-  }
-  hit.count += 1;
-  if (hit.count > 20) {
-    const retryAfter = Math.ceil((hit.resetAt - now) / 1000);
-    rateHits.delete(ip);
-    return { ok: false, retryAfter };
-  }
-  return { ok: true };
-}
-
-function clientIp(request: Request): string {
-  return (
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    request.headers.get('x-real-ip') ||
-    'local'
-  );
-}
-
 export async function POST(request: Request) {
   try {
-    const rateCheck = checkRateLimit(clientIp(request));
+    const rateCheck = checkRateLimit(
+      `leads:${clientIp(request)}`,
+      20,
+      60 * 60 * 1000
+    );
     if (!rateCheck.ok) {
       return NextResponse.json(
         { error: 'Demasiadas solicitudes. Inténtalo más tarde.' },
@@ -68,6 +44,7 @@ export async function POST(request: Request) {
     const crop = String(body.crop ?? '').trim();
     const farmSize = String(body.farmSize ?? '').trim();
     const problem = String(body.problem ?? '').trim();
+    const privacyAccepted = body.privacyAccepted === true;
 
     const errors: Record<string, string> = {};
     if (!name || name.length < 2 || name.length > 120) {
@@ -78,6 +55,9 @@ export async function POST(request: Request) {
     }
     if (!findMunicipality(municipality)) {
       errors.municipality = 'Selecciona tu municipio de la lista.';
+    }
+    if (!privacyAccepted) {
+      errors.privacy = 'Debes aceptar la política de privacidad.';
     }
     if (crop && !CROPS.some((c) => c.value === crop)) {
       errors.crop = 'Selecciona un cultivo.';

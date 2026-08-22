@@ -4,7 +4,7 @@ import WeatherWidget from '@/components/WeatherWidget';
 import Services from '@/components/Services';
 import FAQ from '@/components/FAQ';
 import LeadForm from '@/components/LeadForm';
-import TrackedWhatsAppLink from '@/components/TrackedWhatsAppLink';
+import FloatingWhatsApp from '@/components/FloatingWhatsApp';
 import { WhatsAppIcon } from '@/components/icons';
 import {
   buildWhatsAppLink,
@@ -79,6 +79,10 @@ export default function HomePage() {
                 Revisamos cada solicitud y respondemos en menos de 24 h para
                 entender tu municipio, cultivo y necesidades reales.
               </p>
+              <p className="local-proof">
+                Para agricultores de Baza, Huéscar, Guadix, Motril, Almuñécar y
+                otros municipios de Granada.
+              </p>
             </div>
           </div>
         </section>
@@ -109,15 +113,14 @@ export default function HomePage() {
 
       <Footer />
 
-      <TrackedWhatsAppLink
-        className="wa-float"
+      <FloatingWhatsApp
         href={waLink}
         source="floating_button"
         ariaLabel={`Hablar con ${businessName()} por WhatsApp`}
       >
         <WhatsAppIcon />
         <span className="wa-text">Hablar con {businessName()}</span>
-      </TrackedWhatsAppLink>
+      </FloatingWhatsApp>
     </>
   );
 }

@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server';
 import { getWeather } from '@/lib/weather';
 import { findMunicipality } from '@/lib/municipalities';
 
+const WEATHER_CACHE_CONTROL =
+  'public, s-maxage=300, stale-while-revalidate=600';
+
+function weatherResponse(data: unknown): NextResponse {
+  return NextResponse.json(data, {
+    headers: { 'Cache-Control': WEATHER_CACHE_CONTROL },
+  });
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
@@ -13,7 +22,7 @@ export async function GET(request: Request) {
   if (place) {
     try {
       const data = await getWeather(place);
-      return NextResponse.json(data);
+      return weatherResponse(data);
     } catch (err) {
       console.error('[weather] error inesperado:', err);
       return NextResponse.json(
@@ -41,7 +50,7 @@ export async function GET(request: Request) {
     lon,
     aemet: '',
   });
-  return NextResponse.json(data);
+  return weatherResponse(data);
 }
 
 export const dynamic = 'force-dynamic';

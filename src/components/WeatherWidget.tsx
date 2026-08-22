@@ -362,7 +362,7 @@ export default function WeatherWidget() {
             }
           }}
         >
-          <summary>Personalizar el cálculo de riego <span>(opcional)</span></summary>
+          <summary>Ajustar por cultivo <span>(opcional)</span></summary>
           <div className="advanced-options-body">
             <div className="field">
               <label htmlFor="crop">Tu cultivo</label>

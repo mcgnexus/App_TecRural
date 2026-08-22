@@ -1,4 +1,4 @@
-const CACHE = 'tecrural-v1';
+const CACHE = 'tecrural-v2';
 const SHELL = ['/', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {
@@ -29,24 +29,32 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // No cachear llamadas a la API
-  if (url.pathname.startsWith('/api/')) return;
   // Solo peticiones del propio origen
   if (url.origin !== self.location.origin) return;
 
+  const networkFirst = request.mode === 'navigate' || url.pathname.startsWith('/api/');
+  const cacheApiResponse = !url.pathname.startsWith('/api/admin/');
+
   event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(() => {
-          if (request.mode === 'navigate') return caches.match('/');
-          return cached;
-        });
-    })
+    networkFirst
+      ? fetch(request)
+          .then((response) => {
+            if (response.ok && cacheApiResponse) {
+              caches.open(CACHE).then((cache) => cache.put(request, response.clone()));
+            }
+            return response;
+          })
+          .catch(async () => {
+            const cached = cacheApiResponse ? await caches.match(request) : undefined;
+            return cached || (request.mode === 'navigate' ? caches.match('/') : Response.error());
+          })
+      : caches.match(request).then((cached) =>
+          cached || fetch(request).then((response) => {
+            if (response.ok) {
+              caches.open(CACHE).then((cache) => cache.put(request, response.clone()));
+            }
+            return response;
+          })
+        )
   );
 });

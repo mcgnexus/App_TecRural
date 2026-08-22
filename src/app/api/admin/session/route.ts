@@ -6,6 +6,7 @@ import {
   verifyPassword,
   buildSessionCookie,
 } from '@/lib/admin-auth';
+import { checkRateLimit, clientIp } from '@/lib/rate-limit';
 
 export async function GET() {
   if (isAuthenticated()) {
@@ -15,6 +16,21 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const rateCheck = checkRateLimit(
+    `admin-session:${clientIp(request)}`,
+    10,
+    15 * 60 * 1000
+  );
+  if (!rateCheck.ok) {
+    return NextResponse.json(
+      { error: 'Demasiados intentos. Inténtalo más tarde.' },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(rateCheck.retryAfter ?? 60) },
+      }
+    );
+  }
+
   const body = await request.json().catch(() => null);
   const password = body?.password;
 
