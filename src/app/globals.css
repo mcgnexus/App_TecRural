@@ -1421,6 +1421,52 @@ textarea {
   font-size: 0.85rem;
 }
 
+.new-badge {
+  color: var(--green-ok);
+  font-weight: 700;
+}
+
+.row-new {
+  background: var(--green-ok-bg);
+}
+
+.lead-alert-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--green-ok-bg);
+  border: 1.5px solid var(--green-ok);
+  color: #1c3b1c;
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  animation: leadAlertPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes leadAlertPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(52, 168, 83, 0); }
+  50% { box-shadow: 0 0 0 5px rgba(52, 168, 83, 0.15); }
+}
+
+.lead-alert-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--green-ok);
+  flex-shrink: 0;
+  animation: leadDot 1.4s ease-in-out infinite;
+}
+
+@keyframes leadDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.lead-alert-hint {
+  color: #2f5d2f;
+  font-size: 0.85rem;
+}
+
 .row-pending {
   background: var(--red-bg);
 }

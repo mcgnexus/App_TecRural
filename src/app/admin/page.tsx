@@ -52,6 +52,10 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [listError, setListError] = useState('');
 
+  // Datos derivados
+  const newCount = leads.filter((l) => !l.responded_at && hoursSince(l.created_at) <= 24).length;
+  const pendingCount = leads.filter((l) => !l.responded_at && hoursSince(l.created_at) > 24).length;
+
   const checkSession = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/session');
@@ -87,6 +91,13 @@ export default function AdminPage() {
       setLoading(false);
     }
   }, []);
+
+  // Auto-refresh periódico para detectar leads nuevos sin recargar la página.
+  useEffect(() => {
+    if (auth !== 'in') return;
+    const id = setInterval(() => void loadLeads(), 30000);
+    return () => clearInterval(id);
+  }, [auth, loadLeads]);
 
   const onLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,8 +159,6 @@ export default function AdminPage() {
     URL.revokeObjectURL(url);
   };
 
-  const pendingCount = leads.filter((l) => !l.responded_at && hoursSince(l.created_at) > 24).length;
-
   if (auth === 'loading') {
     return (
       <div className="admin-wrap">
@@ -196,6 +205,9 @@ export default function AdminPage() {
           <p className="admin-sub">
             {total} contacto{total === 1 ? '' : 's'} guardado
             {total === 1 ? '' : 's'} en la base de datos.
+            {newCount > 0 && (
+              <span className="new-badge"> {""} {newCount} nuevo{newCount === 1 ? '' : 's'}</span>
+            )}
             {pendingCount > 0 && (
               <span className="pending-badge"> {pendingCount} sin responder (&gt;24h)</span>
             )}
@@ -211,6 +223,18 @@ export default function AdminPage() {
       </div>
 
       {listError && <div className="error-box">{listError}</div>}
+
+      {newCount > 0 && (
+        <div className="lead-alert-banner" role="status">
+          <span className="lead-alert-dot" aria-hidden="true" />
+          <strong>
+            📥 {newCount} {newCount === 1 ? 'lead nuevo' : 'leads nuevos'} sin leer
+          </strong>
+          <span className="lead-alert-hint">
+            Hay {newCount} {newCount === 1 ? 'solicitud' : 'solicitudes'} recibida{newCount === 1 ? '' : 's'} en las últimas 24h. ¡Revísala pronto!
+          </span>
+        </div>
+      )}
 
       {loading ? (
         <div className="status" role="status">
@@ -240,8 +264,9 @@ export default function AdminPage() {
             <tbody>
               {leads.map((l) => {
                 const isPending = !l.responded_at && hoursSince(l.created_at) > 24;
+                const isNew = !l.responded_at && hoursSince(l.created_at) <= 24;
                 return (
-                  <tr key={l.id} className={isPending ? 'row-pending' : undefined}>
+                  <tr key={l.id} className={isPending ? 'row-pending' : isNew ? 'row-new' : undefined}>
                     <td className="mono">{l.created_at}</td>
                     <td>{l.name}</td>
                     <td className="mono">{l.phone}</td>
