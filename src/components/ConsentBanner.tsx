@@ -21,6 +21,7 @@ export default function ConsentBanner({ onAccept, onReject }: ConsentBannerProps
 
   const handleAccept = () => {
     localStorage.setItem('analytics-consent', 'accepted');
+    window.dispatchEvent(new Event('analytics-consent-changed'));
     setIsAnimating(false);
     setTimeout(() => {
       setIsVisible(false);
@@ -30,6 +31,7 @@ export default function ConsentBanner({ onAccept, onReject }: ConsentBannerProps
 
   const handleReject = () => {
     localStorage.setItem('analytics-consent', 'rejected');
+    window.dispatchEvent(new Event('analytics-consent-changed'));
     setIsAnimating(false);
     setTimeout(() => {
       setIsVisible(false);

@@ -6,6 +6,7 @@ declare global {
   interface Window {
     gtag?: (...args: any[]) => void;
     dataLayer?: any[];
+    __tecruralAnalyticsInitialized?: boolean;
   }
 }
 
@@ -23,6 +24,11 @@ export default function Analytics({ measurementId }: AnalyticsProps) {
   }, []);
 
   const initializeAnalytics = useCallback((id: string) => {
+    if (window.__tecruralAnalyticsInitialized) {
+      updateConsent('granted');
+      return;
+    }
+
     window.dataLayer = window.dataLayer || [];
 
     function gtag(...args: any[]) {
@@ -43,6 +49,7 @@ export default function Analytics({ measurementId }: AnalyticsProps) {
     script.async = true;
     script.src = `https://www.googletagmanager.com/gtag/js?id=${id}`;
     document.head.appendChild(script);
+    window.__tecruralAnalyticsInitialized = true;
   }, [updateConsent]);
 
   useEffect(() => {
@@ -54,7 +61,19 @@ export default function Analytics({ measurementId }: AnalyticsProps) {
       updateConsent('denied');
     }
 
+    const onConsentChanged = () => {
+      const nextConsent = localStorage.getItem('analytics-consent');
+      if (nextConsent === 'accepted') {
+        initializeAnalytics(measurementId);
+      } else {
+        updateConsent('denied');
+      }
+    };
+
+    window.addEventListener('analytics-consent-changed', onConsentChanged);
+
     return () => {
+      window.removeEventListener('analytics-consent-changed', onConsentChanged);
       if (window.gtag) {
         updateConsent('denied');
       }

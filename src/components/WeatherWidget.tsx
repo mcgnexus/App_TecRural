@@ -13,6 +13,7 @@ import { currentPhenology, formatDateLong } from '@/lib/phenology';
 import { buildWhatsAppLink, businessName } from '@/lib/wa';
 import LocationSelector from './LocationSelector';
 import TrackedWhatsAppLink from './TrackedWhatsAppLink';
+import { trackEvent } from './Analytics';
 import {
   SunIcon,
   DropletIcon,
@@ -205,6 +206,12 @@ export default function WeatherWidget() {
       setWeather(data);
       setStatus('ok');
       publishConsultLocation(place.zone, place.name);
+      trackEvent('weather_consult_success', {
+        source: 'weather_widget',
+        municipality: place.name,
+        zone: place.zone,
+        weather_source: data.source,
+      });
       setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 80);
@@ -214,6 +221,11 @@ export default function WeatherWidget() {
       setError(
         'No se ha podido obtener el tiempo ahora mismo. Prueba de nuevo en unos minutos.'
       );
+      trackEvent('weather_consult_error', {
+        source: 'weather_widget',
+        municipality: place.name,
+        zone: place.zone,
+      });
     }
   }, [municipality, publishConsultLocation]);
 
@@ -338,7 +350,17 @@ export default function WeatherWidget() {
         <details
           className="advanced-options"
           open={advancedOpen}
-          onToggle={(e) => setAdvancedOpen(e.currentTarget.open)}
+          onToggle={(e) => {
+            const isOpen = e.currentTarget.open;
+            setAdvancedOpen(isOpen);
+            if (isOpen) {
+              trackEvent('advanced_options_open', {
+                source: 'weather_widget',
+                municipality,
+                zone,
+              });
+            }
+          }}
         >
           <summary>Personalizar el cálculo de riego <span>(opcional)</span></summary>
           <div className="advanced-options-body">

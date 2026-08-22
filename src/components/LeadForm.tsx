@@ -5,6 +5,7 @@ import type { FormEvent } from 'react';
 import { ZONES, municipalitiesByZone, type ZoneId } from '@/lib/municipalities';
 import { CROPS, FARM_SIZES, PROBLEMS } from '@/lib/crops';
 import { businessName } from '@/lib/wa';
+import { trackEvent } from './Analytics';
 
 type Errors = Record<string, string>;
 type ConsultLocation = { zone: ZoneId; municipality: string };
@@ -78,7 +79,14 @@ export default function LeadForm() {
       next.phone = 'Escribe un teléfono válido.';
     if (!form.municipality) next.municipality = 'Selecciona tu municipio.';
     setErrors(next);
-    if (Object.keys(next).length > 0) return;
+    if (Object.keys(next).length > 0) {
+      trackEvent('lead_submit_error', {
+        source: 'contact_form',
+        reason: 'validation',
+        fields: Object.keys(next).join(','),
+      });
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -91,14 +99,34 @@ export default function LeadForm() {
         const data = await res.json().catch(() => null);
         if (data?.errors) {
           setErrors(data.errors);
+          trackEvent('lead_submit_error', {
+            source: 'contact_form',
+            reason: 'backend_validation',
+            fields: Object.keys(data.errors).join(','),
+          });
         } else {
           setServerError(data?.error || 'No se pudo enviar. Inténtalo de nuevo.');
+          trackEvent('lead_submit_error', {
+            source: 'contact_form',
+            reason: 'server',
+            status: res.status,
+          });
         }
         return;
       }
+      trackEvent('lead_submit_success', {
+        source: 'contact_form',
+        municipality: form.municipality,
+        zone,
+        came_from_consult: cameFromConsult,
+      });
       setDone(true);
     } catch {
       setServerError('No se pudo enviar. Comprueba tu conexión e inténtalo de nuevo.');
+      trackEvent('lead_submit_error', {
+        source: 'contact_form',
+        reason: 'network',
+      });
     } finally {
       setSubmitting(false);
     }
