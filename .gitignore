@@ -31,3 +31,4 @@ yarn-error.log*
 
 # tipos generados por next
 next-env.d.ts
+.vercel

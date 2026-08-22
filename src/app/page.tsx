@@ -3,26 +3,13 @@ import Footer from '@/components/Footer';
 import WeatherWidget from '@/components/WeatherWidget';
 import Services from '@/components/Services';
 import FAQ from '@/components/FAQ';
-import nextDynamic from 'next/dynamic';
+import LeadForm from '@/components/LeadForm';
 import { WhatsAppIcon } from '@/components/icons';
 import {
   buildWhatsAppLink,
   businessName,
   defaultWhatsAppMessage,
 } from '@/lib/wa';
-
-const LeadForm = nextDynamic(() => import('@/components/LeadForm'), {
-  ssr: false,
-  loading: () => (
-    <div className="card form-card" aria-hidden="true">
-      <div className="skeleton skeleton-line form-skeleton-line" />
-      <div className="skeleton skeleton-line form-skeleton-line form-skeleton-gap" />
-      <div className="skeleton skeleton-line form-skeleton-line form-skeleton-gap" />
-      <div className="skeleton skeleton-line form-skeleton-line form-skeleton-gap" />
-      <div className="skeleton skeleton-block form-skeleton-btn" />
-    </div>
-  ),
-});
 
 export const dynamic = 'force-dynamic';
 

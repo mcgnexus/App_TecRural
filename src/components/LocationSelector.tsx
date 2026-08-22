@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import CoverageMap from './CoverageMap';
+import dynamic from 'next/dynamic';
 import { ZONES, type ZoneId } from '@/lib/municipalities';
+
+const CoverageMap = dynamic(() => import('./CoverageMap'), { ssr: false });
 
 interface LocationSelectorProps {
   selectedZone: ZoneId | '';
