@@ -7,6 +7,7 @@ import {
   ReportIcon,
   WhatsAppIcon,
 } from './icons';
+import TrackedWhatsAppLink from './TrackedWhatsAppLink';
 import { buildWhatsAppLink, businessName, defaultWhatsAppMessage } from '@/lib/wa';
 
 const PLANS = [
@@ -87,16 +88,50 @@ const SERVICES = [
 ];
 
 export default function Services() {
-  const waLink = buildWhatsAppLink(defaultWhatsAppMessage());
+  const gatedWaLink = buildWhatsAppLink(defaultWhatsAppMessage('servicio premium bloqueado'));
+  const servicesWaLink = buildWhatsAppLink(defaultWhatsAppMessage('bloque servicios'));
   return (
     <section id="servicios" className="section section-alt">
       <div className="container">
         <div className="section-head">
-          <h2>Servicios {businessName()}</h2>
+          <h2>Consulta y avisos gratis para empezar</h2>
           <p>
-            Tecnología práctica para ayudarte a decidir mejor con{' '}
-            <strong>información local</strong>, sin complicaciones. Los precios
-            son orientativos y sin permanencia obligatoria.
+            Primero consulta tu municipio y recibe avisos agrícolas por WhatsApp.
+            Si necesitas seguimiento, sensores o informes, puedes pasar a un plan.
+          </p>
+        </div>
+
+        <div className="services-list">
+          {SERVICES.map((s) => (
+            <div className={`service${s.gated ? ' service-gated' : ''}`} key={s.title}>
+              <div className="service-icon">
+                <s.icon width={20} height={20} />
+              </div>
+              <div>
+                <h4>
+                  {s.title}
+                  {s.gated && <span className="gated-badge">🔒 Solo con contacto</span>}
+                </h4>
+                <p>{s.text}</p>
+                {s.gated && (
+                  <TrackedWhatsAppLink
+                    className="btn btn-wa btn-small"
+                    href={gatedWaLink}
+                    source="services_gated"
+                  >
+                    <WhatsAppIcon /> Desbloquear por WhatsApp
+                  </TrackedWhatsAppLink>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="section-head section-head-gap">
+          <h2>Planes si quieres seguimiento</h2>
+          <p>
+            Precios orientativos y sin permanencia obligatoria. Instalación de
+            sensores o estación: presupuesto personalizado desde 180 €.
           </p>
         </div>
 
@@ -125,47 +160,14 @@ export default function Services() {
           ))}
         </div>
 
-        <div className="section-head section-head-gap">
-          <h2>Qué hacemos</h2>
-          <p>Instalación de sensores o estación: presupuesto personalizado desde 180 €.</p>
-        </div>
-
-        <div className="services-list">
-          {SERVICES.map((s) => (
-            <div className={`service${s.gated ? ' service-gated' : ''}`} key={s.title}>
-              <div className="service-icon">
-                <s.icon width={20} height={20} />
-              </div>
-              <div>
-                <h4>
-                  {s.title}
-                  {s.gated && <span className="gated-badge">🔒 Solo con contacto</span>}
-                </h4>
-                <p>{s.text}</p>
-                {s.gated && (
-                  <a
-                    className="btn btn-wa btn-small"
-                    href={waLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <WhatsAppIcon /> Desbloquear por WhatsApp
-                  </a>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
         <div className="services-cta">
-          <a
+          <TrackedWhatsAppLink
             className="btn btn-wa btn-lg"
-            href={waLink}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={servicesWaLink}
+            source="services_cta"
           >
             <WhatsAppIcon /> Consultar con {businessName()} por WhatsApp
-          </a>
+          </TrackedWhatsAppLink>
         </div>
       </div>
     </section>

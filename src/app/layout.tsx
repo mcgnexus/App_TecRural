@@ -6,7 +6,7 @@ import Analytics from '@/components/Analytics';
 import './globals.css';
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://tecrural.es';
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 export const metadata: Metadata = {

@@ -12,6 +12,11 @@ export function buildWhatsAppLink(message: string): string {
   return `https://wa.me/${number}?text=${encoded}`;
 }
 
-export function defaultWhatsAppMessage(): string {
-  return `Hola ${businessName()}, me gustaría información sobre vuestros servicios para mi finca.`;
+export function defaultWhatsAppMessage(source?: string): string {
+  return [
+    `Hola ${businessName()}, me gustaría información sobre vuestros servicios para mi finca.`,
+    source ? `Origen: ${source}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
 }

@@ -12,6 +12,7 @@ import { computeAlarms, type AlarmKind } from '@/lib/alarms';
 import { currentPhenology, formatDateLong } from '@/lib/phenology';
 import { buildWhatsAppLink, businessName } from '@/lib/wa';
 import LocationSelector from './LocationSelector';
+import TrackedWhatsAppLink from './TrackedWhatsAppLink';
 import {
   SunIcon,
   DropletIcon,
@@ -85,6 +86,8 @@ function alarmIcon(kind: AlarmKind) {
 }
 
 const AVISO_LABEL = { amarillo: 'Amarillo', naranja: 'Naranja', rojo: 'Rojo' } as const;
+const CONSULT_LOCATION_KEY = 'tecrural-consult-location';
+const CONSULT_LOCATION_EVENT = 'tecrural:consult-location';
 
 function avisoRange(iso: string): string {
   const d = new Date(iso);
@@ -111,6 +114,16 @@ export default function WeatherWidget() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [error, setError] = useState('');
   const resultsRef = useRef<HTMLDivElement>(null);
+
+  const publishConsultLocation = useCallback(
+    (nextZone: typeof zone, nextMunicipality: string) => {
+      if (!nextZone || !nextMunicipality) return;
+      const detail = { zone: nextZone, municipality: nextMunicipality };
+      localStorage.setItem(CONSULT_LOCATION_KEY, JSON.stringify(detail));
+      window.dispatchEvent(new CustomEvent(CONSULT_LOCATION_EVENT, { detail }));
+    },
+    []
+  );
 
   const municipalities = useMemo(
     () => municipalitiesByZone(zone),
@@ -165,6 +178,7 @@ export default function WeatherWidget() {
     setMunicipality(value);
     setWeather(null);
     setStatus('idle');
+    publishConsultLocation(zone, value);
   };
 
   const consult = useCallback(async () => {
@@ -190,6 +204,7 @@ export default function WeatherWidget() {
       const data = (await res.json()) as WeatherData;
       setWeather(data);
       setStatus('ok');
+      publishConsultLocation(place.zone, place.name);
       setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 80);
@@ -200,7 +215,7 @@ export default function WeatherWidget() {
         'No se ha podido obtener el tiempo ahora mismo. Prueba de nuevo en unos minutos.'
       );
     }
-  }, [municipality]);
+  }, [municipality, publishConsultLocation]);
 
   const onGeo = useCallback(async () => {
     if (!('geolocation' in navigator)) {
@@ -232,12 +247,13 @@ export default function WeatherWidget() {
       setStatus('idle');
       setGeoStatus('ok');
       setGeoMsg(`Te hemos asignado ${place.name}.`);
+      publishConsultLocation(place.zone, place.name);
       consult();
     } catch {
       setGeoStatus('error');
       setGeoMsg('No hemos podido obtener tu ubicación. Elígelo a mano.');
     }
-  }, [consult]);
+  }, [consult, publishConsultLocation]);
 
   const risks = useMemo(
     () => (weather ? computeRisks(weather) : null),
@@ -299,6 +315,7 @@ export default function WeatherWidget() {
             `- Mejores horas: ${hoursText}`,
           ]
         : []),
+      `Origen: resultado de consulta meteorológica`,
     ].join('\n');
   }, [weather, reco, municipality, crop, irri, hoursText, alertTitles, deduced]);
 
@@ -567,6 +584,18 @@ export default function WeatherWidget() {
             <div className="reco-advice">{reco.advice}</div>
           </div>
 
+          <div className="context-lead-cta">
+            <div>
+              <strong>Recibe estos avisos en WhatsApp para {municipality}</strong>
+              <p>
+                Te avisamos de calor, heladas, viento o lluvia sin que tengas que consultar la web.
+              </p>
+            </div>
+            <a className="btn btn-wa" href="#contacto">
+              Activar avisos
+            </a>
+          </div>
+
           {activeAlerts.length > 0 && (
             <div className="alarm-banner" role="alert">
               <LightningIcon width={20} height={20} />
@@ -791,14 +820,13 @@ export default function WeatherWidget() {
           )}
 
           {waLink && (
-            <a
+            <TrackedWhatsAppLink
               className="btn btn-wa btn-block wa-cta-block"
               href={waLink}
-              target="_blank"
-              rel="noopener noreferrer"
+              source="weather_results"
             >
               <WhatsAppIcon /> Hablar con {businessName()}
-            </a>
+            </TrackedWhatsAppLink>
           )}
 
           <p className="updated-note">

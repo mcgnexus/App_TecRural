@@ -1,12 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { ZONES, municipalitiesByZone } from '@/lib/municipalities';
+import { ZONES, municipalitiesByZone, type ZoneId } from '@/lib/municipalities';
 import { CROPS, FARM_SIZES, PROBLEMS } from '@/lib/crops';
 import { businessName } from '@/lib/wa';
 
 type Errors = Record<string, string>;
+type ConsultLocation = { zone: ZoneId; municipality: string };
+
+const CONSULT_LOCATION_KEY = 'tecrural-consult-location';
+const CONSULT_LOCATION_EVENT = 'tecrural:consult-location';
 
 export default function LeadForm() {
   const [zone, setZone] = useState('');
@@ -23,6 +27,38 @@ export default function LeadForm() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [serverError, setServerError] = useState('');
+  const [cameFromConsult, setCameFromConsult] = useState(false);
+
+  const applyConsultLocation = useCallback((location: ConsultLocation) => {
+    setZone(location.zone);
+    setForm((f) => ({ ...f, municipality: location.municipality }));
+    setErrors((er) => ({ ...er, municipality: '' }));
+    setCameFromConsult(true);
+  }, []);
+
+  useEffect(() => {
+    const raw = localStorage.getItem(CONSULT_LOCATION_KEY);
+    if (raw) {
+      try {
+        const location = JSON.parse(raw) as ConsultLocation;
+        if (location.zone && location.municipality) {
+          applyConsultLocation(location);
+        }
+      } catch {
+        localStorage.removeItem(CONSULT_LOCATION_KEY);
+      }
+    }
+
+    const onConsultLocation = (event: Event) => {
+      const { detail } = event as CustomEvent<ConsultLocation>;
+      if (detail?.zone && detail?.municipality) {
+        applyConsultLocation(detail);
+      }
+    };
+
+    window.addEventListener(CONSULT_LOCATION_EVENT, onConsultLocation);
+    return () => window.removeEventListener(CONSULT_LOCATION_EVENT, onConsultLocation);
+  }, [applyConsultLocation]);
 
   const set = (field: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -72,50 +108,42 @@ export default function LeadForm() {
     zone as (typeof ZONES)[number]['id'] | ''
   );
 
-  if (done) {
-    return (
-      <div className="card form-card form-success">
-        <h3>¡Gracias por confiar en {businessName()}!</h3>
-        <p>
-          Hemos recibido tu solicitud. En breve nos pondremos en contacto para
-          contarte cómo recibir los avisos agrícolas.
-        </p>
-      </div>
-    );
-  }
+  const nameField = (
+    <div className="field">
+      <label htmlFor="lead-name">Nombre</label>
+      <input
+        id="lead-name"
+        type="text"
+        autoComplete="name"
+        value={form.name}
+        onChange={set('name')}
+        placeholder="Tu nombre"
+        className={errors.name ? 'invalid' : undefined}
+      />
+      {errors.name && <div className="field-error">{errors.name}</div>}
+    </div>
+  );
 
-  return (
-    <form className="card form-card" onSubmit={onSubmit} noValidate>
-      <div className="field">
-        <label htmlFor="lead-name">Nombre</label>
-        <input
-          id="lead-name"
-          type="text"
-          autoComplete="name"
-          value={form.name}
-          onChange={set('name')}
-          placeholder="Tu nombre"
-          className={errors.name ? 'invalid' : undefined}
-        />
-        {errors.name && <div className="field-error">{errors.name}</div>}
-      </div>
+  const phoneField = (
+    <div className="field">
+      <label htmlFor="lead-phone">Teléfono WhatsApp</label>
+      <input
+        id="lead-phone"
+        type="tel"
+        autoComplete="tel"
+        inputMode="tel"
+        value={form.phone}
+        onChange={set('phone')}
+        placeholder="600 000 000"
+        className={errors.phone ? 'invalid' : undefined}
+        aria-invalid={Boolean(errors.phone)}
+      />
+      {errors.phone && <div className="field-error">{errors.phone}</div>}
+    </div>
+  );
 
-      <div className="field">
-        <label htmlFor="lead-phone">Teléfono</label>
-        <input
-          id="lead-phone"
-          type="tel"
-          autoComplete="tel"
-          inputMode="tel"
-          value={form.phone}
-          onChange={set('phone')}
-          placeholder="600 000 000"
-          className={errors.phone ? 'invalid' : undefined}
-          aria-invalid={Boolean(errors.phone)}
-        />
-        {errors.phone && <div className="field-error">{errors.phone}</div>}
-      </div>
-
+  const locationFields = (
+    <>
       <div className="field">
         <label htmlFor="lead-zone">Zona</label>
         <div className="select-wrap">
@@ -126,6 +154,7 @@ export default function LeadForm() {
               setZone(e.target.value);
               setForm((f) => ({ ...f, municipality: '' }));
               setErrors((er) => ({ ...er, municipality: '' }));
+              setCameFromConsult(false);
             }}
           >
             <option value="">Elige tu zona…</option>
@@ -144,7 +173,10 @@ export default function LeadForm() {
           <select
             id="lead-municipality"
             value={form.municipality}
-            onChange={set('municipality')}
+            onChange={(e) => {
+              set('municipality')(e);
+              setCameFromConsult(false);
+            }}
             disabled={!zone}
             className={errors.municipality ? 'invalid' : undefined}
             aria-invalid={Boolean(errors.municipality)}
@@ -163,6 +195,26 @@ export default function LeadForm() {
           <div className="field-error">{errors.municipality}</div>
         )}
       </div>
+    </>
+  );
+
+  if (done) {
+    return (
+      <div className="card form-card form-success">
+        <h3>¡Gracias por confiar en {businessName()}!</h3>
+        <p>
+          Hemos recibido tu solicitud. En breve nos pondremos en contacto para
+          contarte cómo recibir los avisos agrícolas.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form className="card form-card" onSubmit={onSubmit} noValidate>
+      {nameField}
+      {cameFromConsult ? locationFields : phoneField}
+      {cameFromConsult ? phoneField : locationFields}
 
       <details className="advanced-options">
         <summary>
@@ -251,10 +303,10 @@ export default function LeadForm() {
           type="submit"
           disabled={submitting}
         >
-          {submitting ? 'Enviando…' : 'Recibir avisos agrícolas'}
+          {submitting ? 'Enviando…' : 'Quiero recibir avisos por WhatsApp'}
         </button>
         <p className="hint form-note">
-          Solo usaremos tus datos para enviarte información de {businessName()}.
+          Te escribimos por WhatsApp. Sin llamadas comerciales.
         </p>
       </div>
     </form>

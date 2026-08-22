@@ -169,7 +169,21 @@ textarea {
   font-size: clamp(1rem, 2.6vw, 1.15rem);
   color: var(--muted);
   max-width: 560px;
+  margin: 0 auto 10px;
+}
+
+.hero-trust {
+  color: var(--green-dark);
+  font-size: 0.95rem;
+  font-weight: 700;
   margin: 0 auto 24px;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
 }
 
 .badge {
@@ -239,6 +253,18 @@ textarea {
   text-decoration: none;
 }
 
+.btn-ghost {
+  background: #fff;
+  color: var(--green-dark);
+  border: 1.5px solid #cfe0cf;
+}
+
+.btn-ghost:hover {
+  background: var(--green-light);
+  color: var(--green-dark);
+  text-decoration: none;
+}
+
 .btn-block {
   width: 100%;
 }
@@ -257,8 +283,60 @@ textarea {
   padding-top: 16px;
 }
 
+.lead-shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  background: linear-gradient(135deg, #f0f8f0 0%, #ffffff 100%);
+  border-color: #cfe0cf;
+}
+
+.lead-shortcut p {
+  color: var(--muted);
+  margin-top: 4px;
+}
+
 .section-disclaimer {
   padding-top: 10px;
+}
+
+.trust-section {
+  padding-top: 10px;
+}
+
+.trust-card {
+  max-width: 780px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #ffffff 0%, #f4faf4 100%);
+  border-color: #d4e6d4;
+}
+
+.trust-kicker {
+  display: inline-block;
+  color: var(--green);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.trust-card h2 {
+  color: var(--green-dark);
+  font-size: clamp(1.35rem, 3.4vw, 1.8rem);
+  margin-bottom: 10px;
+}
+
+.trust-card p {
+  color: var(--muted);
+}
+
+.trust-note {
+  color: var(--ink) !important;
+  font-weight: 700;
+  margin-top: 12px;
 }
 
 .section-alt {
@@ -658,6 +736,23 @@ textarea {
 
 .wa-cta-block {
   margin-top: 18px;
+}
+
+.context-lead-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1.5px solid #bde5cc;
+  border-radius: 14px;
+  background: #f1fbf4;
+}
+
+.context-lead-cta p {
+  color: var(--muted);
+  margin-top: 4px;
 }
 
 .error-box.inline {
@@ -1130,6 +1225,24 @@ textarea {
 .form-card {
   max-width: 560px;
   margin: 0 auto;
+}
+
+#contacto:target .form-card {
+  animation: formTargetPulse 1.6s ease-out;
+}
+
+@keyframes formTargetPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(31, 174, 85, 0.38), var(--shadow);
+    transform: translateY(-2px);
+  }
+  55% {
+    box-shadow: 0 0 0 10px rgba(31, 174, 85, 0.12), var(--shadow);
+  }
+  100% {
+    box-shadow: var(--shadow);
+    transform: translateY(0);
+  }
 }
 
 .form-row {
@@ -1673,6 +1786,17 @@ textarea {
     display: inline;
     font-size: 0.78rem;
     white-space: nowrap;
+  }
+  .hero-actions,
+  .lead-shortcut,
+  .context-lead-cta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .hero-actions .btn,
+  .lead-shortcut .btn,
+  .context-lead-cta .btn {
+    width: 100%;
   }
   .form-row {
     grid-template-columns: 1fr;

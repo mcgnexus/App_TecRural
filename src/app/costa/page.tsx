@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import LeadForm from '@/components/LeadForm';
 import { businessName } from '@/lib/wa';
 import { MUNICIPALITIES } from '@/lib/municipalities';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tecrural.es';
 const costa = MUNICIPALITIES.filter((m) => m.zone === 'costa');
 
 export const metadata: Metadata = {
@@ -31,11 +32,11 @@ export default function CostaPage() {
             <span className="badge">Costa Tropical de Granada</span>
             <h1>Clima y riego para tu finca en la Costa Tropical</h1>
             <p className="lead">
-              Información meteorológica local y recomendaciones de riego
-              orientativo para agricultores de la Costa Tropical de Granada.
+              Recibe avisos de lluvia, viento, calor y riego por WhatsApp para
+              agricultores de la Costa Tropical de Granada.
             </p>
-            <a className="btn btn-primary btn-lg" href="#consulta">
-              Consultar mi municipio
+            <a className="btn btn-primary btn-lg" href="#contacto">
+              Recibir avisos por WhatsApp
             </a>
           </div>
         </section>
@@ -105,6 +106,19 @@ export default function CostaPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section id="contacto" className="section">
+          <div className="container">
+            <div className="section-head">
+              <h2>Recibir avisos de la Costa Tropical por WhatsApp</h2>
+              <p>
+                Déjanos tu municipio y teléfono. Te escribimos por WhatsApp, sin
+                llamadas comerciales.
+              </p>
+            </div>
+            <LeadForm />
           </div>
         </section>
 
