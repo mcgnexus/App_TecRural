@@ -296,6 +296,21 @@ function markAlertedSqlite(
 // API pública
 // ---------------------------------------------------------------------------
 
+/** Diagnóstico rápido de conexión a la BD (para depuración). */
+export async function dbHealth(): Promise<{ use_neon: boolean; has_db: boolean; reachable?: boolean; error?: string }> {
+  const useNeon = USE_NEON;
+  const hasDb = Boolean(process.env.DATABASE_URL);
+  if (!useNeon || !hasDb) {
+    return { use_neon: useNeon, has_db: hasDb };
+  }
+  try {
+    const { rows } = await neon().query('SELECT 1 AS ok');
+    return { use_neon: true, has_db: true, reachable: rows.length > 0 };
+  } catch (e) {
+    return { use_neon: true, has_db: true, reachable: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 export interface NewLead {
   id: number;
   created_at: string;

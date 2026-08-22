@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createLead } from '@/lib/db';
+import { dbHealth } from '@/lib/db';
 import { findMunicipality } from '@/lib/municipalities';
 import { CROPS, FARM_SIZES, PROBLEMS } from '@/lib/crops';
 
@@ -104,9 +105,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, id: lead.id }, { status: 201 });
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
     console.error('[leads] error al guardar:', err);
+    const health = await dbHealth().catch(() => ({}));
     return NextResponse.json(
-      { error: 'No se pudo guardar el contacto. Inténtalo de nuevo.' },
+      { error: 'No se pudo guardar el contacto.', debug: msg.slice(0, 400), health },
       { status: 500 }
     );
   }
