@@ -1,0 +1,5 @@
+{
+  "name": "app-tec-rural",
+  "buildCommand": "next build",
+  "outputDirectory": ".next"
+}
