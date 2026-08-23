@@ -600,6 +600,46 @@ export default function WeatherWidget() {
             </div>
           </div>
 
+          {activeAlerts.length > 0 && (
+            <div className="alarm-banner priority-alert" role="alert">
+              <LightningIcon width={24} height={24} />
+              <div>
+                <strong>Alerta hoy:</strong>{' '}
+                {activeAlerts.map((a) => a.title).join(' · ')}
+              </div>
+            </div>
+          )}
+
+          {weather.avisos && weather.avisos.length > 0 && (
+            <section className="priority-notices" aria-label="Avisos oficiales">
+              <h3 className="section-title">Avisos oficiales de AEMET</h3>
+              <div className="avisos">
+                {weather.avisos.map((a, i) => (
+                  <div className={`aviso ${a.nivel}`} key={`aviso-${i}`}>
+                    <div className="aviso-head">
+                      <span className="aviso-badge">{AVISO_LABEL[a.nivel]}</span>
+                      <span className="aviso-title">
+                        {a.fenomeno}
+                        {a.valor ? ` · ${a.valor}` : ''}
+                      </span>
+                    </div>
+                    <div className="aviso-zona">{a.zona}</div>
+                    {(a.inicio || a.fin) && (
+                      <div className="aviso-range">
+                        {a.inicio && `Desde ${avisoRange(a.inicio)}`}
+                        {a.inicio && a.fin && ' · '}
+                        {a.fin && `hasta ${avisoRange(a.fin)}`}
+                      </div>
+                    )}
+                    {a.descripcion && (
+                      <div className="aviso-desc">{a.descripcion}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           <div className={`reco ${reco.level}`}>
             <div className="reco-title">{reco.title}</div>
             <p className="reco-message">{reco.message}</p>
@@ -618,17 +658,7 @@ export default function WeatherWidget() {
             </a>
           </div>
 
-          {activeAlerts.length > 0 && (
-            <div className="alarm-banner" role="alert">
-              <LightningIcon width={20} height={20} />
-              <div>
-                <strong>Alerta hoy:</strong>{' '}
-                {activeAlerts.map((a) => a.title).join(' · ')}
-              </div>
-            </div>
-          )}
-
-          {deduced && (
+           {deduced && (
             <>
               <h3 className="section-title">
                  Etapa del cultivo estimada
@@ -673,39 +703,7 @@ export default function WeatherWidget() {
             })}
           </div>
 
-          {weather.avisos && weather.avisos.length > 0 && (
-            <>
-              <h3 className="section-title">
-                Avisos oficiales de AEMET
-              </h3>
-              <div className="avisos">
-                {weather.avisos.map((a, i) => (
-                  <div className={`aviso ${a.nivel}`} key={`aviso-${i}`}>
-                    <div className="aviso-head">
-                      <span className="aviso-badge">{AVISO_LABEL[a.nivel]}</span>
-                      <span className="aviso-title">
-                        {a.fenomeno}
-                        {a.valor ? ` · ${a.valor}` : ''}
-                      </span>
-                    </div>
-                    <div className="aviso-zona">{a.zona}</div>
-                    {(a.inicio || a.fin) && (
-                      <div className="aviso-range">
-                        {a.inicio && `Desde ${avisoRange(a.inicio)}`}
-                        {a.inicio && a.fin && ' · '}
-                        {a.fin && `hasta ${avisoRange(a.fin)}`}
-                      </div>
-                    )}
-                    {a.descripcion && (
-                      <div className="aviso-desc">{a.descripcion}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          <h3 className="section-title">
+           <h3 className="section-title">
             Alertas meteorológicas
           </h3>
           <p className="hint hint-mt">
