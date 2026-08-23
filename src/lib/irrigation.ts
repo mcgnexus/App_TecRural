@@ -230,9 +230,27 @@ export function computeIrrigation(
           ? 'Maduración / final'
           : 'Plena producción';
 
+  const maxWind = Math.max(
+    weather.current.windSpeed,
+    ...(weather.hourly ?? []).map((hour) => hour.windSpeed),
+    ...(weather.hourly ?? []).map((hour) => hour.windGusts)
+  );
+  const tmax = Math.max(
+    weather.current.temperature,
+    weather.daily[0]?.tempMax ?? weather.current.temperature
+  );
+  const dryConditions = et0 >= 6 || tmax >= 30 || weather.current.humidity <= 40;
+  const windyConditions = maxWind >= 25;
+
   const note = coveredByRain
-    ? 'La lluvia prevista cubre las necesidades del cultivo; vigila el suelo por si acaso.'
-    : 'Cantidad orientativa (FAO-56: ET0 × Kc). Antes de regar, comprueba la humedad del suelo a 10-20 cm de profundidad.';
+    ? 'La lluvia prevista cubre buena parte de la necesidad. Comprueba el suelo antes de regar por si la lluvia no ha calado lo suficiente.'
+    : dryConditions && windyConditions
+      ? 'Hoy el suelo puede perder humedad rápidamente. Comprueba la humedad a 10–20 cm y evita regar por aspersión si hay viento.'
+      : dryConditions
+        ? 'Hoy el suelo puede perder humedad rápidamente. Comprueba la humedad a 10–20 cm antes de regar.'
+        : windyConditions
+          ? 'Hay viento previsto. Comprueba la humedad a 10–20 cm y evita regar por aspersión en las horas ventosas.'
+          : 'Antes de regar, comprueba la humedad del suelo a 10–20 cm y ajusta la cantidad a lo que observes en la parcela.';
 
   return {
     et0,

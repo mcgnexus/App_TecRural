@@ -631,7 +631,7 @@ export default function WeatherWidget() {
           {deduced && (
             <>
               <h3 className="section-title">
-                Fase fenológica estimada
+                 Etapa del cultivo estimada
               </h3>
               <div className="pheno-card">
                 <div className="pheno-main">
@@ -643,7 +643,7 @@ export default function WeatherWidget() {
                 </div>
                 <p className="pheno-reason">{deduced.reason}</p>
                 <p className="hint hint-mt">
-                  Fase genérica usada en el riego:{' '}
+                   Etapa usada para ajustar el riego:{' '}
                   <strong>
                     {CROP_STAGES.find((s) => s.value === deduced.kcStage)
                       ?.label ?? deduced.kcStage}
@@ -790,10 +790,9 @@ export default function WeatherWidget() {
                   <dd className="metric-value">
                     {irri.etc.toFixed(1)}
                     <small> mm</small>
-                    <div className="irri-sub">
-                      ET0 {irri.et0.toFixed(1)} × Kc {irri.kc.toFixed(2)} (
-                      {irri.cropLabel}, {irri.stageLabel.toLowerCase()})
-                    </div>
+                     <div className="irri-sub">
+                       Estimación según el cultivo, su etapa y el tiempo previsto
+                     </div>
                   </dd>
                 </dl>
 
@@ -841,7 +840,16 @@ export default function WeatherWidget() {
                 )}
               </div>
 
-              <p className="irri-note">{irri.note}</p>
+               <p className="irri-note">{irri.note}</p>
+               <details className="technical-detail">
+                 <summary>Ver cálculo técnico</summary>
+                 <p>
+                   Usamos la evapotranspiración de referencia (ET0) y el
+                   coeficiente del cultivo (Kc) según su etapa: ET0{' '}
+                   {irri.et0.toFixed(1)} × Kc {irri.kc.toFixed(2)} ={' '}
+                   {irri.etc.toFixed(1)} mm.
+                 </p>
+               </details>
             </div>
           )}
 

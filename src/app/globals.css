@@ -1555,6 +1555,22 @@ textarea {
   margin-top: 10px;
 }
 
+.technical-detail {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-top: 12px;
+}
+
+.technical-detail summary {
+  cursor: pointer;
+  color: var(--green-dark);
+  font-weight: 600;
+}
+
+.technical-detail p {
+  margin: 6px 0 0;
+}
+
 .privacy-consent input {
   accent-color: var(--green);
   flex: 0 0 auto;
