@@ -13,8 +13,10 @@ export default function LegalNoticePage() {
     <LegalPage title="Aviso legal">
       <h2>Identificación</h2>
       <p>
-        Este sitio web es titularidad de TecRural. Para cualquier consulta puedes
-        escribir a <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+        Este sitio web es titularidad de Manuel Carrasco García, NIF 76143911L,
+        que opera bajo el nombre TecRural. Domicilio: Barrio Los Reyes 113,
+        18830 Huéscar (Granada). Para cualquier consulta puedes escribir a{' '}
+        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
       </p>
       <h2>Objeto</h2>
       <p>

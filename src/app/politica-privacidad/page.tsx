@@ -12,13 +12,15 @@ export default function PrivacyPolicyPage() {
   return (
     <LegalPage title="Política de privacidad">
       <p>
-        En TecRural tratamos los datos que nos facilitas a través del formulario
-        para atender tu solicitud, informarte sobre nuestros avisos agrícolas y
-        contactar contigo por WhatsApp cuando lo hayas solicitado.
+        Manuel Carrasco García trata los datos que nos facilitas a través del
+        formulario para gestionar la suscripción a avisos agrícolas y, solo si
+        lo autorizas por separado, enviarte comunicaciones comerciales.
       </p>
       <h2>Responsable y contacto</h2>
       <p>
-        Responsable: TecRural. Contacto: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+        Responsable: Manuel Carrasco García, NIF 76143911L. Nombre comercial:
+        TecRural. Domicilio: Barrio Los Reyes 113, 18830 Huéscar (Granada).
+        Contacto: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
       </p>
       <h2>Datos que tratamos</h2>
       <p>
@@ -28,15 +30,22 @@ export default function PrivacyPolicyPage() {
       </p>
       <h2>Finalidad y base legal</h2>
       <p>
-        Usamos los datos para responder a tu petición y gestionar el servicio
-        solicitado. El envío de avisos agrícolas por WhatsApp requiere tu
-        consentimiento expreso, que puedes retirar en cualquier momento sin que
-        afecte al tratamiento realizado previamente.
+        Para gestionar los avisos agrícolas por WhatsApp tratamos tus datos con
+        base en tu solicitud y consentimiento expreso. Esta autorización es
+        necesaria para prestarte el servicio de avisos y puedes retirarla en
+        cualquier momento.
       </p>
       <p>
-        Recibir información comercial es totalmente opcional: solo te llegará si
-        marcas la casilla correspondiente en el formulario, de forma separada y
-        sin que ello condicione el servicio de avisos agrícolas.
+        Las comunicaciones comerciales tienen una finalidad independiente y
+        solo se enviarán si marcas su casilla específica. Son opcionales y no
+        condicionan la recepción de avisos agrícolas. Puedes retirar esta
+        autorización en cualquier momento.
+      </p>
+      <h2>Comunicaciones por WhatsApp</h2>
+      <p>
+        Los mensajes se enviarán al número que facilites y únicamente para las
+        finalidades que hayas autorizado. Puedes solicitar la baja escribiendo
+        por WhatsApp o contactando con {CONTACT_EMAIL}.
       </p>
       <h2>Conservación y destinatarios</h2>
       <p>

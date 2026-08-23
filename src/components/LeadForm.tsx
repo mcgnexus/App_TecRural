@@ -363,7 +363,8 @@ export default function LeadForm() {
             aria-invalid={Boolean(errors.alertsConsent)}
           />
           <span>
-            Acepto recibir avisos agrícolas por WhatsApp.{' '}
+            Solicito recibir por WhatsApp avisos agrícolas de {businessName()}{' '}
+            para mi municipio.{' '}
             <span className="required-mark" aria-hidden="true">*</span>
           </span>
         </label>
@@ -378,7 +379,10 @@ export default function LeadForm() {
             checked={marketingConsent}
             onChange={(e) => setMarketingConsent(e.target.checked)}
           />
-          <span>Acepto recibir información comercial de {businessName()}.</span>
+          <span>
+            Consiento que {businessName()} me envíe por WhatsApp información
+            comercial sobre sus servicios, novedades y promociones. Es opcional.
+          </span>
         </label>
 
         <p className="hint">
@@ -386,7 +390,8 @@ export default function LeadForm() {
           <a href="/politica-privacidad" target="_blank" rel="noreferrer">
             política de privacidad
           </a>
-          . Puedes retirar tu consentimiento en cualquier momento.
+          . Puedes retirar tu autorización en cualquier momento escribiendo
+          {' '}por WhatsApp o contactando con nosotros.
         </p>
       </div>
 
