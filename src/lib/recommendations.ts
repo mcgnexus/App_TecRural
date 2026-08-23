@@ -35,6 +35,21 @@ function levelOf(value: number, low: number, high: number): RiskLevel {
   return 'low';
 }
 
+function windLevelOf(weather: WeatherData): RiskLevel {
+  const maxGust = Math.max(
+    weather.current.windGusts,
+    ...(weather.hourly ?? []).map((hour) => hour.windGusts)
+  );
+  const maxWind = Math.max(
+    weather.current.windSpeed,
+    ...(weather.hourly ?? []).map((hour) => hour.windSpeed)
+  );
+
+  if (maxGust >= 60 || maxWind >= 40) return 'high';
+  if (maxGust >= 40 || maxWind >= 28) return 'medium';
+  return 'low';
+}
+
 export function computeRisks(weather: WeatherData): Risks {
   const { current, daily } = weather;
   const today = daily[0];
@@ -42,7 +57,7 @@ export function computeRisks(weather: WeatherData): Risks {
   const peakTemp = Math.max(current.temperature, today?.tempMax ?? current.temperature);
   const heatLevel = levelOf(peakTemp, 30, 34);
 
-  const windLevel = levelOf(current.windSpeed, 20, 35);
+  const windLevel = windLevelOf(weather);
 
   const rainToday = today?.precipitation ?? 0;
   const rainTomorrow = daily[1]?.precipitation ?? 0;
@@ -69,10 +84,10 @@ export function computeRisks(weather: WeatherData): Risks {
       label: 'Riesgo de viento',
       hint:
         windLevel === 'high'
-          ? 'Viento fuerte. El riego pierde eficacia y el agua se evapora o se desvía.'
+          ? 'Rachas o viento sostenido fuertes previstos. El riego pierde eficacia y el agua se evapora o se desvía.'
           : windLevel === 'medium'
-            ? 'Viento moderado. Evita el riego por aspersión en horas ventosas.'
-            : 'Viento flojo. Sin riesgo por viento.',
+            ? 'Rachas o viento sostenido moderados previstos. Evita el riego por aspersión en horas ventosas.'
+            : 'Viento y rachas flojos previstos. Sin riesgo destacado por viento.',
     },
     dryness: {
       level: drynessLevel,

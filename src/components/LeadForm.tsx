@@ -29,7 +29,8 @@ export default function LeadForm() {
   const [done, setDone] = useState(false);
   const [serverError, setServerError] = useState('');
   const [cameFromConsult, setCameFromConsult] = useState(false);
-  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [alertsConsent, setAlertsConsent] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
 
   const applyConsultLocation = useCallback((location: ConsultLocation) => {
     setZone(location.zone);
@@ -79,7 +80,9 @@ export default function LeadForm() {
     if (!/^[+0-9\s().-]{6,20}$/.test(phone) || phoneDigits.length < 9 || phoneDigits.length > 15)
       next.phone = 'Escribe un teléfono válido.';
     if (!form.municipality) next.municipality = 'Selecciona tu municipio.';
-    if (!privacyAccepted) next.privacy = 'Debes aceptar la política de privacidad.';
+    if (!alertsConsent)
+      next.alertsConsent =
+        'Debes aceptar recibir los avisos agrícolas por WhatsApp.';
     setErrors(next);
     if (Object.keys(next).length > 0) {
       trackEvent('lead_submit_error', {
@@ -95,7 +98,12 @@ export default function LeadForm() {
       const res = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, website, privacyAccepted }),
+        body: JSON.stringify({
+          ...form,
+          website,
+          alertsConsent,
+          marketingConsent,
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
@@ -140,11 +148,14 @@ export default function LeadForm() {
 
   const nameField = (
     <div className="field">
-      <label htmlFor="lead-name">Nombre</label>
+      <label htmlFor="lead-name">
+        Nombre <span className="required-mark" aria-hidden="true">*</span>
+      </label>
       <input
         id="lead-name"
         type="text"
         autoComplete="name"
+        required
         value={form.name}
         onChange={set('name')}
         placeholder="Tu nombre"
@@ -156,13 +167,17 @@ export default function LeadForm() {
 
   const phoneField = (
     <div className="field">
-      <label htmlFor="lead-phone">Teléfono WhatsApp</label>
+      <label htmlFor="lead-phone">
+        Teléfono WhatsApp{' '}
+        <span className="required-mark" aria-hidden="true">*</span>
+      </label>
       <span className="field-hint">Solo WhatsApp. No llamadas comerciales.</span>
       <input
         id="lead-phone"
         type="tel"
         autoComplete="tel"
         inputMode="tel"
+        required
         value={form.phone}
         onChange={set('phone')}
         placeholder="600 000 000"
@@ -176,10 +191,13 @@ export default function LeadForm() {
   const locationFields = (
     <>
       <div className="field">
-        <label htmlFor="lead-zone">Zona</label>
+        <label htmlFor="lead-zone">
+          Zona <span className="required-mark" aria-hidden="true">*</span>
+        </label>
         <div className="select-wrap">
           <select
             id="lead-zone"
+            required
             value={zone}
             onChange={(e) => {
               setZone(e.target.value);
@@ -199,10 +217,13 @@ export default function LeadForm() {
       </div>
 
       <div className="field">
-        <label htmlFor="lead-municipality">Municipio</label>
+        <label htmlFor="lead-municipality">
+          Municipio <span className="required-mark" aria-hidden="true">*</span>
+        </label>
         <div className="select-wrap">
           <select
             id="lead-municipality"
+            required
             value={form.municipality}
             onChange={(e) => {
               set('municipality')(e);
@@ -329,26 +350,44 @@ export default function LeadForm() {
       {serverError && <div className="error-box">{serverError}</div>}
 
       <div className="privacy-consent">
-        <label htmlFor="lead-privacy">
+        <label htmlFor="lead-consent-alerts">
           <input
-            id="lead-privacy"
+            id="lead-consent-alerts"
             type="checkbox"
-            checked={privacyAccepted}
+            required
+            checked={alertsConsent}
             onChange={(e) => {
-              setPrivacyAccepted(e.target.checked);
-              setErrors((er) => ({ ...er, privacy: '' }));
+              setAlertsConsent(e.target.checked);
+              setErrors((er) => ({ ...er, alertsConsent: '' }));
             }}
-            aria-invalid={Boolean(errors.privacy)}
+            aria-invalid={Boolean(errors.alertsConsent)}
           />
           <span>
-            Acepto la{' '}
-            <a href="/politica-privacidad" target="_blank" rel="noreferrer">
-              política de privacidad
-            </a>
-            .
+            Acepto recibir avisos agrícolas por WhatsApp.{' '}
+            <span className="required-mark" aria-hidden="true">*</span>
           </span>
         </label>
-        {errors.privacy && <div className="field-error">{errors.privacy}</div>}
+        {errors.alertsConsent && (
+          <div className="field-error">{errors.alertsConsent}</div>
+        )}
+
+        <label htmlFor="lead-consent-marketing">
+          <input
+            id="lead-consent-marketing"
+            type="checkbox"
+            checked={marketingConsent}
+            onChange={(e) => setMarketingConsent(e.target.checked)}
+          />
+          <span>Acepto recibir información comercial de {businessName()}.</span>
+        </label>
+
+        <p className="hint">
+          Consulta la{' '}
+          <a href="/politica-privacidad" target="_blank" rel="noreferrer">
+            política de privacidad
+          </a>
+          . Puedes retirar tu consentimiento en cualquier momento.
+        </p>
       </div>
 
       <div className="form-actions">

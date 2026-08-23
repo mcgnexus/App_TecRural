@@ -19,6 +19,7 @@ function toCsv(leads: Lead[]): string {
     'cultivo',
     'tamano_finca',
     'problema',
+    'publicidad',
     'fecha',
     'respondido',
   ];
@@ -31,6 +32,7 @@ function toCsv(leads: Lead[]): string {
       labelOf(CROPS, l.crop),
       labelOf(FARM_SIZES, l.farm_size),
       labelOf(PROBLEMS, l.problem),
+      l.marketing_consent ? 'sí' : 'no',
       l.created_at,
       l.responded_at || '',
     ].join(',')
@@ -257,6 +259,7 @@ export default function AdminPage() {
                 <th>Cultivo</th>
                 <th>Finca</th>
                 <th>Problema</th>
+                <th>Publicidad</th>
                 <th>Estado</th>
                 <th></th>
               </tr>
@@ -276,6 +279,13 @@ export default function AdminPage() {
                     </td>
                     <td>{labelOf(FARM_SIZES, l.farm_size)}</td>
                     <td>{labelOf(PROBLEMS, l.problem)}</td>
+                    <td>
+                      {l.marketing_consent ? (
+                        <span className="tag">Sí</span>
+                      ) : (
+                        <span className="status-pending">No</span>
+                      )}
+                    </td>
                     <td>
                       {l.responded_at ? (
                         <span className="status-ok">Respondido</span>

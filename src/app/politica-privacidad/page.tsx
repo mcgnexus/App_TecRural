@@ -29,8 +29,14 @@ export default function PrivacyPolicyPage() {
       <h2>Finalidad y base legal</h2>
       <p>
         Usamos los datos para responder a tu petición y gestionar el servicio
-        solicitado. La base legal es tu consentimiento, que puedes retirar en
-        cualquier momento sin que afecte al tratamiento realizado previamente.
+        solicitado. El envío de avisos agrícolas por WhatsApp requiere tu
+        consentimiento expreso, que puedes retirar en cualquier momento sin que
+        afecte al tratamiento realizado previamente.
+      </p>
+      <p>
+        Recibir información comercial es totalmente opcional: solo te llegará si
+        marcas la casilla correspondiente en el formulario, de forma separada y
+        sin que ello condicione el servicio de avisos agrícolas.
       </p>
       <h2>Conservación y destinatarios</h2>
       <p>

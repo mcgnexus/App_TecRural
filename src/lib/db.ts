@@ -50,9 +50,13 @@ function ensureNeonSchema(): Promise<void> {
           crop TEXT NOT NULL,
           farm_size TEXT,
           problem TEXT,
+          alerts_consent BOOLEAN NOT NULL DEFAULT FALSE,
+          marketing_consent BOOLEAN NOT NULL DEFAULT FALSE,
           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           responded_at TIMESTAMPTZ
         );
+        ALTER TABLE leads ADD COLUMN IF NOT EXISTS alerts_consent BOOLEAN NOT NULL DEFAULT FALSE;
+        ALTER TABLE leads ADD COLUMN IF NOT EXISTS marketing_consent BOOLEAN NOT NULL DEFAULT FALSE;
         CREATE TABLE IF NOT EXISTS alert_logs (
           id SERIAL PRIMARY KEY,
           phone TEXT NOT NULL,
@@ -89,14 +93,16 @@ function fmtDate(d: Date): string {
 async function createLeadNeon(input: LeadInput) {
   await ensureNeonSchema();
   const { rows } = await neon().query(
-      `INSERT INTO leads (name, phone, municipality, crop, farm_size, problem)
-     VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO leads (name, phone, municipality, crop, farm_size, problem, alerts_consent, marketing_consent)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      ON CONFLICT (phone) DO UPDATE SET
        name = EXCLUDED.name,
        municipality = EXCLUDED.municipality,
        crop = EXCLUDED.crop,
        farm_size = EXCLUDED.farm_size,
-       problem = EXCLUDED.problem
+       problem = EXCLUDED.problem,
+       alerts_consent = EXCLUDED.alerts_consent,
+       marketing_consent = EXCLUDED.marketing_consent
      RETURNING id, created_at`,
     [
       input.name,
@@ -105,6 +111,8 @@ async function createLeadNeon(input: LeadInput) {
       input.crop,
       input.farmSize || null,
       input.problem || null,
+      input.alertsConsent,
+      input.marketingConsent,
     ]
   );
   const row = rows[0] as { id: number | string; created_at: Date };
@@ -117,6 +125,8 @@ async function listLeadsNeon(): Promise<Lead[]> {
     `SELECT id, name, phone, municipality, crop,
             COALESCE(farm_size, '') AS farm_size,
             COALESCE(problem, '') AS problem,
+            alerts_consent,
+            marketing_consent,
             created_at,
             responded_at
      FROM leads
@@ -130,6 +140,8 @@ async function listLeadsNeon(): Promise<Lead[]> {
     crop: string;
     farm_size: string;
     problem: string;
+    alerts_consent: boolean;
+    marketing_consent: boolean;
     created_at: Date;
     responded_at: Date | null;
   }>).map((r) => ({
@@ -210,6 +222,8 @@ function sqlite(): Database.Database {
         crop TEXT NOT NULL,
         farm_size TEXT,
         problem TEXT,
+        alerts_consent INTEGER NOT NULL DEFAULT 0,
+        marketing_consent INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
         responded_at TEXT
       );
@@ -230,37 +244,76 @@ function sqlite(): Database.Database {
       );
       CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_phone ON leads (phone);
     `);
+    // Migración para bases creadas antes de separar los consentimientos.
+    const leadCols = (
+      db.prepare('PRAGMA table_info(leads)').all() as Array<{ name: string }>
+    ).map((c) => c.name);
+    if (!leadCols.includes('alerts_consent')) {
+      db.exec(
+        'ALTER TABLE leads ADD COLUMN alerts_consent INTEGER NOT NULL DEFAULT 0'
+      );
+    }
+    if (!leadCols.includes('marketing_consent')) {
+      db.exec(
+        'ALTER TABLE leads ADD COLUMN marketing_consent INTEGER NOT NULL DEFAULT 0'
+      );
+    }
     sqliteDb = db;
   }
   return sqliteDb;
 }
 
 function createLeadSqlite(input: LeadInput) {
+  // better-sqlite3 no acepta booleanos: se guardan como 0/1.
+  const params = {
+    name: input.name,
+    phone: input.phone,
+    municipality: input.municipality,
+    crop: input.crop,
+    farmSize: input.farmSize,
+    problem: input.problem,
+    alertsConsent: input.alertsConsent ? 1 : 0,
+    marketingConsent: input.marketingConsent ? 1 : 0,
+  };
   const info = sqlite()
     .prepare(
-      `INSERT INTO leads (name, phone, municipality, crop, farm_size, problem)
-       VALUES (@name, @phone, @municipality, @crop, @farmSize, @problem)
+      `INSERT INTO leads (name, phone, municipality, crop, farm_size, problem, alerts_consent, marketing_consent)
+       VALUES (@name, @phone, @municipality, @crop, @farmSize, @problem, @alertsConsent, @marketingConsent)
        ON CONFLICT (phone) DO UPDATE SET
          name = EXCLUDED.name,
          municipality = EXCLUDED.municipality,
          crop = EXCLUDED.crop,
          farm_size = EXCLUDED.farm_size,
-         problem = EXCLUDED.problem`
+         problem = EXCLUDED.problem,
+         alerts_consent = EXCLUDED.alerts_consent,
+         marketing_consent = EXCLUDED.marketing_consent`
     )
-    .run(input);
+    .run(params);
   return sqlite()
     .prepare(`SELECT id, created_at FROM leads WHERE phone = ?`)
     .get(input.phone) as { id: number; created_at: string };
 }
 
+type LeadRowSqlite = Omit<Lead, 'alerts_consent' | 'marketing_consent'> & {
+  alerts_consent: number;
+  marketing_consent: number;
+};
+
 function listLeadsSqlite(): Lead[] {
-  return sqlite()
-    .prepare(
-      `SELECT id, name, phone, municipality, crop, farm_size, problem, created_at, responded_at
-       FROM leads
-       ORDER BY id DESC`
-    )
-    .all() as Lead[];
+  return (
+    sqlite()
+      .prepare(
+        `SELECT id, name, phone, municipality, crop, farm_size, problem,
+                alerts_consent, marketing_consent, created_at, responded_at
+         FROM leads
+         ORDER BY id DESC`
+      )
+      .all() as unknown as LeadRowSqlite[]
+  ).map((r) => ({
+    ...r,
+    alerts_consent: Boolean(r.alerts_consent),
+    marketing_consent: Boolean(r.marketing_consent),
+  }));
 }
 
 function countLeadsSqlite(): number {

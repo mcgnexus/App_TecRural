@@ -2,6 +2,7 @@ import type { WeatherData } from './weather';
 import type { AemetAviso, AvisoNivel } from './aemet';
 import type { Crop } from './crops';
 import { et0Of } from './irrigation';
+import { computeRisks } from './recommendations';
 
 export type AlarmLevel = 'info' | 'warning' | 'alert';
 
@@ -199,12 +200,9 @@ export function computeAlarms(weather: WeatherData, opts: AlarmOptions = {}): Al
     current.windGusts,
     ...(weather.hourly ?? []).map((h) => h.windGusts),
   ]);
-  const maxWind = maxOf([
-    current.windSpeed,
-    ...(weather.hourly ?? []).map((h) => h.windSpeed),
-  ]);
   const gustHour = weather.hourly?.find((h) => h.windGusts === maxGust);
-  if (maxGust >= 60 || maxWind >= 40) {
+  const windLevel = computeRisks(weather).wind.level;
+  if (windLevel === 'high') {
     alarms.push({
       kind: 'viento',
       level: 'alert',
@@ -213,7 +211,7 @@ export function computeAlarms(weather: WeatherData, opts: AlarmOptions = {}): Al
       advice: 'No riegues por aspersión; usa goteo. Revisa tutores, mallas y estructuras ligeras.',
       at: gustHour ? hourOf(gustHour.time) : undefined,
     });
-  } else if (maxGust >= 40 || maxWind >= 28) {
+  } else if (windLevel === 'medium') {
     alarms.push({
       kind: 'viento',
       level: 'warning',

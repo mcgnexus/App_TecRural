@@ -44,7 +44,8 @@ export async function POST(request: Request) {
     const crop = String(body.crop ?? '').trim();
     const farmSize = String(body.farmSize ?? '').trim();
     const problem = String(body.problem ?? '').trim();
-    const privacyAccepted = body.privacyAccepted === true;
+    const alertsConsent = body.alertsConsent === true;
+    const marketingConsent = body.marketingConsent === true;
 
     const errors: Record<string, string> = {};
     if (!name || name.length < 2 || name.length > 120) {
@@ -56,8 +57,9 @@ export async function POST(request: Request) {
     if (!findMunicipality(municipality)) {
       errors.municipality = 'Selecciona tu municipio de la lista.';
     }
-    if (!privacyAccepted) {
-      errors.privacy = 'Debes aceptar la política de privacidad.';
+    if (!alertsConsent) {
+      errors.alertsConsent =
+        'Debes aceptar recibir los avisos agrícolas por WhatsApp.';
     }
     if (crop && !CROPS.some((c) => c.value === crop)) {
       errors.crop = 'Selecciona un cultivo.';
@@ -80,6 +82,8 @@ export async function POST(request: Request) {
       crop,
       farmSize,
       problem,
+      alertsConsent,
+      marketingConsent,
     });
 
     return NextResponse.json({ ok: true, id: lead.id }, { status: 201 });

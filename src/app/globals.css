@@ -449,6 +449,10 @@ textarea {
   color: var(--ink);
 }
 
+.required-mark {
+  color: var(--red);
+}
+
 .field-hint {
   display: block;
   color: var(--muted);
@@ -1545,6 +1549,10 @@ textarea {
   align-items: flex-start;
   display: flex;
   gap: 8px;
+}
+
+.privacy-consent label + label {
+  margin-top: 10px;
 }
 
 .privacy-consent input {

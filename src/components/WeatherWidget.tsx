@@ -657,7 +657,7 @@ export default function WeatherWidget() {
           )}
 
           <h3 className="section-title">
-            Riesgos para el cultivo
+            Riesgos previstos para el cultivo
           </h3>
           <div className="risks">
             {(Object.keys(risks) as (keyof typeof risks)[]).map((key) => {
@@ -708,6 +708,10 @@ export default function WeatherWidget() {
           <h3 className="section-title">
             Alertas meteorológicas
           </h3>
+          <p className="hint hint-mt">
+            Los riesgos se clasifican como bajo, medio o alto. Los avisos
+            oficiales de AEMET aparecen como alertas independientes.
+          </p>
 
           {alarms.length === 0 ? (
             <p className="hint hint-mt">
