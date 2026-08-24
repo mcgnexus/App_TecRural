@@ -60,6 +60,11 @@ button {
   cursor: pointer;
 }
 
+:where(a, button, input, select, summary):focus-visible {
+  outline: 3px solid #1f6fcb;
+  outline-offset: 3px;
+}
+
 input,
 select,
 textarea {
@@ -1967,6 +1972,13 @@ textarea {
 
 /* ---------- Responsive ---------- */
 @media (max-width: 640px) {
+  body {
+    font-size: 17px;
+  }
+  .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
   .header-inner {
     height: auto;
     min-height: 62px;
@@ -1981,9 +1993,50 @@ textarea {
     gap: 8px;
   }
   .nav-link {
-    display: inline;
-    font-size: 0.78rem;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 8px 6px;
+    font-size: 0.86rem;
     white-space: nowrap;
+  }
+  .field label {
+    font-size: 1rem;
+  }
+  .field-hint,
+  .hint,
+  .field-error {
+    font-size: 0.9rem;
+  }
+  .field select,
+  .field input {
+    min-height: 48px;
+    font-size: 17px;
+  }
+  .btn {
+    min-height: 48px;
+  }
+  .metric-top {
+    font-size: 0.92rem;
+  }
+  .metric-value {
+    font-size: 1.5rem;
+  }
+  .forecast-day .day,
+  .forecast-day .t-range,
+  .forecast-day .rain,
+  .forecast-day .cond {
+    font-size: 0.9rem;
+  }
+  .risk .risk-label {
+    font-size: 0.95rem;
+  }
+  .risk .risk-level,
+  .risk .risk-hint {
+    font-size: 0.9rem;
+  }
+  .section-title {
+    font-size: 1.2rem;
   }
   .hero-actions,
   .lead-shortcut,
@@ -2007,6 +2060,10 @@ textarea {
     grid-template-columns: 1fr 1fr;
   }
   .wa-float {
+    right: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    min-width: 52px;
+    min-height: 52px;
     padding: 14px;
   }
   .wa-float .wa-text {
