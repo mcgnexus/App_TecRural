@@ -3,6 +3,7 @@ import Script from 'next/script';
 import { businessName, whatsappNumber } from '@/lib/wa';
 import ConsentBanner from '@/components/ConsentBanner';
 import Analytics from '@/components/Analytics';
+import PwaInstallPrompt from '@/components/PwaInstallPrompt';
 import { SITE_URL } from '@/lib/site';
 import './globals.css';
 
@@ -118,6 +119,7 @@ export default function RootLayout({
       </head>
       <body>
         {children}
+        <PwaInstallPrompt />
         <Script id="register-sw" strategy="afterInteractive">
           {`
             if ('serviceWorker' in navigator && location.protocol.startsWith('https')) {

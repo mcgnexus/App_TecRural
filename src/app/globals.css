@@ -1440,6 +1440,64 @@ textarea {
   display: inline;
 }
 
+/* ---------- Instalación PWA ---------- */
+.pwa-install {
+  position: fixed;
+  right: 18px;
+  bottom: calc(86px + env(safe-area-inset-bottom));
+  z-index: 60;
+  width: min(360px, calc(100vw - 36px));
+  padding: 18px 48px 18px 18px;
+  border: 2px solid var(--green);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(38, 52, 42, 0.22);
+  color: var(--ink);
+}
+
+.pwa-install strong {
+  color: var(--green-dark);
+  font-size: 1.05rem;
+}
+
+.pwa-install p {
+  margin: 5px 0 12px;
+  line-height: 1.45;
+}
+
+.pwa-install-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--cloud);
+  color: var(--ink);
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.pwa-install-action {
+  width: 100%;
+  min-height: 48px;
+}
+
+.pwa-install-ios {
+  margin-bottom: 0 !important;
+  font-size: 0.92rem;
+}
+
+@media (max-width: 640px) {
+  .pwa-install {
+    right: 12px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    width: calc(100vw - 24px);
+    padding: 18px 52px 18px 18px;
+  }
+}
+
 /* ---------- Aviso legal ---------- */
 .disclaimer {
   background: var(--cloud);
