@@ -66,6 +66,7 @@ export interface WeatherData {
   /** Avisos oficiales de fenómenos adversos de AEMET (Meteoalerta) para la
    *  provincia. */
   avisos?: AemetAviso[];
+  avisosStatus?: 'available' | 'unavailable' | 'not-configured';
   updatedAt: string;
 }
 
@@ -302,6 +303,17 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+function madridDate(): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Madrid',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const get = (type: string) => parts.find((part) => part.type === type)?.value;
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
 /**
  * Obtiene el tiempo para un municipio.
  *
@@ -350,32 +362,43 @@ async function fetchWeather(location: WeatherLocation): Promise<WeatherData> {
       : Promise.resolve(undefined),
   ]);
   const avisos = avisosRaw ?? undefined;
+  const avisosStatus: WeatherData['avisosStatus'] =
+    !aemetKey || !location.avisoZona
+      ? 'not-configured'
+      : avisosRaw == null
+        ? 'unavailable'
+        : 'available';
+  // AEMET may temporarily return the previous bulletin after midnight. Never
+  // expose that bulletin as current weather or as today's forecast.
+  const usableAemet = aemet && aemet.today.date === madridDate() ? aemet : null;
 
   // Ninguna API respondió
-  if (!om && !aemet) {
+  if (!om && !usableAemet) {
     console.warn('[weather] sin fuentes disponibles, usando datos orientativos');
     return buildMock(location.lat);
   }
 
   // Solo AEMET
-  if (om === null && aemet) {
+  if (om === null && usableAemet) {
     return {
       source: 'aemet',
-      current: aemet.current,
-      daily: [aemet.today],
+      current: usableAemet.current,
+      daily: [usableAemet.today],
       avisos,
-      updatedAt: aemet.elaboratedAt,
+      avisosStatus,
+      updatedAt: new Date().toISOString(),
     };
   }
 
   // Solo Open-Meteo
-  if (!aemet || om === null) {
+  if (!usableAemet || om === null) {
     return {
       source: 'openmeteo',
       current: om!.current,
       daily: om!.daily,
       hourly: om!.hourly,
       avisos,
+      avisosStatus,
       updatedAt: new Date().toISOString(),
     };
   }
@@ -384,24 +407,25 @@ async function fetchWeather(location: WeatherLocation): Promise<WeatherData> {
   // tendencia y para lo que AEMET no aporta (mm de lluvia sin predicción
   // horaria).
   const today: DailyForecast = {
-    ...aemet.today,
-    tempMax: aemet.today.tempMax || om.daily[0]?.tempMax || aemet.today.tempMax,
-    tempMin: aemet.today.tempMin || om.daily[0]?.tempMin || aemet.today.tempMin,
-    precipitation: aemet.hasHourly
-      ? aemet.today.precipitation
-      : om.daily[0]?.precipitation ?? aemet.today.precipitation,
+    ...usableAemet.today,
+    tempMax: usableAemet.today.tempMax || om.daily[0]?.tempMax || usableAemet.today.tempMax,
+    tempMin: usableAemet.today.tempMin || om.daily[0]?.tempMin || usableAemet.today.tempMin,
+    precipitation: usableAemet.hasHourly
+      ? usableAemet.today.precipitation
+      : om.daily[0]?.precipitation ?? usableAemet.today.precipitation,
     precipitationProbability:
-      aemet.today.precipitationProbability || om.daily[0]?.precipitationProbability || 0,
-    et0: om.daily[0]?.et0 ?? aemet.today.et0,
+      usableAemet.today.precipitationProbability || om.daily[0]?.precipitationProbability || 0,
+    et0: om.daily[0]?.et0 ?? usableAemet.today.et0,
   };
 
   return {
     source: 'hybrid',
-    current: aemet.hasHourly ? aemet.current : om.current,
+    current: usableAemet.hasHourly ? usableAemet.current : om.current,
     daily: [today, ...om.daily.slice(1)],
     hourly: om.hourly,
-    avisos,
-    updatedAt: aemet.elaboratedAt,
+      avisos,
+      avisosStatus,
+    updatedAt: new Date().toISOString(),
   };
 }
 

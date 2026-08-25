@@ -329,8 +329,8 @@ function parseCapAviso(xml: string): AemetAviso | null {
  * +zona, p. ej. "611802" para Guadix y Baza). Devuelve [] si no hay avisos
  * activos o la API no está disponible.
  */
-export async function getAemetAvisos(zoneCode: string): Promise<AemetAviso[]> {
-  if (!/^\d{6}$/.test(zoneCode)) return [];
+export async function getAemetAvisos(zoneCode: string): Promise<AemetAviso[] | null> {
+  if (!/^\d{6}$/.test(zoneCode)) return null;
   const ccaa = zoneCode.slice(0, 2);
   const key = `zona:${zoneCode}`;
 
@@ -359,6 +359,7 @@ export async function getAemetAvisos(zoneCode: string): Promise<AemetAviso[]> {
     }
   } catch (err) {
     console.warn('[aemet] avisos no disponibles:', err);
+    return null;
   }
 
   avisosCache.set(key, { data: result, expiresAt: Date.now() + AVISOS_TTL_MS });

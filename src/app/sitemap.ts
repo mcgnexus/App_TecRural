@@ -24,6 +24,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 0.8,
     },
+    {
+      url: `${SITE_URL}/consulta`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.8,
+    },
+    {
+      url: `${SITE_URL}/servicios`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
     ...['politica-privacidad', 'aviso-legal', 'politica-cookies'].map((path) => ({
       url: `${SITE_URL}/${path}`,
       lastModified: now,

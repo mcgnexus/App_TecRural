@@ -22,7 +22,7 @@ const FAQ_DATA: FAQItem[] = [
   {
     category: 'Uso',
     question: '¿Cómo funciona?',
-    answer: 'Selecciona tu zona y municipio, elige tu cultivo (opcional) y consulta el tiempo. El sistema combina datos oficiales de AEMET con modelos meteorológicos de Open-Meteo para ofrecerte información precisa y actualizada.'
+    answer: 'Selecciona tu zona y municipio, elige tu cultivo (opcional) y consulta el tiempo. Combinamos AEMET cuando hay datos actuales disponibles con Open-Meteo. Si una fuente falla o está desactualizada, no la usamos como condición actual y te indicamos si los datos son orientativos.'
   },
   {
     category: 'Uso',
@@ -32,7 +32,7 @@ const FAQ_DATA: FAQItem[] = [
   {
     category: 'Datos',
     question: '¿Qué fuentes de datos utilizáis?',
-    answer: 'Utilizamos una estrategia híbrida: AEMET (Agencia Estatal de Meteorología) para las condiciones actuales y previsión de hoy, y Open-Meteo para la tendencia de los próximos días. Si alguna fuente no está disponible, mostramos datos orientativos.'
+    answer: 'Utilizamos AEMET (Agencia Estatal de Meteorología) para avisos y previsión municipal cuando está disponible, y Open-Meteo para la tendencia y el respaldo. Los avisos oficiales solo aparecen cuando AEMET responde y hay un aviso activo para la zona.'
   },
   {
     category: 'Datos',

@@ -25,9 +25,18 @@ export default function PwaInstallPrompt() {
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [show, setShow] = useState(false);
   const [ios, setIos] = useState(false);
+  const [formVisible, setFormVisible] = useState(false);
 
   useEffect(() => {
     if (isStandalone()) return;
+
+    const form = document.getElementById('contacto');
+    const observer = form
+      ? new IntersectionObserver(([entry]) => setFormVisible(entry.isIntersecting), {
+          rootMargin: '-10% 0px -10% 0px',
+        })
+      : null;
+    if (form && observer) observer.observe(form);
 
     const dismissedAt = Number(localStorage.getItem(DISMISS_KEY));
     if (dismissedAt && Date.now() - dismissedAt < DISMISS_DAYS * 86400000) return;
@@ -51,6 +60,7 @@ export default function PwaInstallPrompt() {
     return () => {
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
       window.removeEventListener('appinstalled', onAppInstalled);
+      observer?.disconnect();
     };
   }, []);
 
@@ -67,7 +77,7 @@ export default function PwaInstallPrompt() {
     setShow(false);
   };
 
-  if (!show || (!installEvent && !ios)) return null;
+  if (!show || formVisible || (!installEvent && !ios)) return null;
 
   return (
     <aside className="pwa-install" aria-label="Instalar TecRural">

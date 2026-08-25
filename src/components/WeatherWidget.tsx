@@ -706,10 +706,21 @@ export default function WeatherWidget() {
            <h3 className="section-title">
             Alertas meteorológicas
           </h3>
-          <p className="hint hint-mt">
-            Los riesgos se clasifican como bajo, medio o alto. Los avisos
-            oficiales de AEMET aparecen como alertas independientes.
-          </p>
+           <p className="hint hint-mt">
+             Los riesgos se clasifican como bajo, medio o alto. Los avisos
+             oficiales de AEMET aparecen como alertas independientes.
+           </p>
+           {weather.avisosStatus === 'not-configured' && (
+             <p className="hint hint-mt">
+               Los avisos oficiales de AEMET no están configurados en este momento.
+             </p>
+           )}
+           {weather.avisosStatus === 'unavailable' && (
+             <p className="hint hint-mt">
+               No se han podido consultar los avisos oficiales de AEMET ahora mismo.
+               Las alertas mostradas abajo son orientativas.
+             </p>
+           )}
 
           {alarms.length === 0 ? (
             <p className="hint hint-mt">

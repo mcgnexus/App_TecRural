@@ -136,6 +136,23 @@ textarea {
   gap: 16px;
 }
 
+.menu-toggle {
+  display: none;
+  width: 44px;
+  height: 44px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.menu-toggle span {
+  display: block;
+  height: 2px;
+  margin: 5px 0;
+  background: var(--green-dark);
+}
+
 .nav-link {
   font-size: 0.95rem;
   font-weight: 600;
@@ -1469,8 +1486,8 @@ textarea {
   position: absolute;
   top: 8px;
   right: 8px;
-  width: 40px;
-  height: 40px;
+   width: 44px;
+   height: 44px;
   border: 0;
   border-radius: 50%;
   background: var(--cloud);
@@ -2048,13 +2065,31 @@ textarea {
     display: none;
   }
   .nav {
-    gap: 8px;
+    position: absolute;
+    top: 100%;
+    left: 16px;
+    right: 16px;
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: var(--shadow);
+  }
+  .nav.nav-open {
+    display: flex;
+  }
+  .menu-toggle {
+    display: block;
   }
   .nav-link {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
-    padding: 8px 6px;
+     padding: 8px 12px;
     font-size: 0.86rem;
     white-space: nowrap;
   }
